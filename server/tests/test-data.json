@@ -1,0 +1,24 @@
+{
+  "root": {
+    "data": { "text": "测试根节点" },
+    "children": [
+      {
+        "data": { "text": "子节点1" },
+        "children": []
+      },
+      {
+        "data": { "text": "子节点2" },
+        "children": [
+          {
+            "data": { "text": "孙节点" },
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "theme": { "template": "avocado", "config": {} },
+  "layout": "logicalStructure",
+  "config": {},
+  "view": null
+}
