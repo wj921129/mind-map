@@ -65,7 +65,8 @@ export function buildEditHostHtml ({ mapId, title }) {
     window.externalPublicPath = '/dist/'
     window.takeOverApp = true
     window.__MAP_ID__ = '${escapeJs(mapId)}'
-    window.__MCP_WS_URL__ = 'ws://localhost:3100'
+    var wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://'
+    window.__MCP_WS_URL__ = wsProto + location.host + '/ws/mcp?mapId=' + encodeURIComponent('${escapeJs(mapId)}')
   </script>
   ${cssLinks}
   <style>
@@ -101,6 +102,8 @@ export function buildEditHostHtml ({ mapId, title }) {
       color: #606266;
     }
     .mm-capsule button:hover { color: #409eff; border-color: #409eff; }
+    .mm-capsule button.save-btn { background: #409eff; color: #fff; border-color: #409eff; }
+    .mm-capsule button.save-btn:hover { background: #66b1ff; }
     .mm-dialog-mask {
       position: fixed; top:0; left:0; right:0; bottom:0;
       background: rgba(0,0,0,0.4); z-index: 10000;
@@ -140,6 +143,7 @@ export function buildEditHostHtml ({ mapId, title }) {
     <a href="/">← 列表</a>
     <span class="mm-title" id="mmTitle" title="点击重命名"></span>
     <span class="mm-status" id="mmStatus">已保存</span>
+    <button id="mmSaveBtn" class="save-btn" title="立即保存 (Ctrl+S)">保存</button>
     <button id="mmShareBtn">分享</button>
     <button id="mmHistoryBtn">历史版本</button>
   </div>
@@ -157,6 +161,27 @@ export function buildEditHostHtml ({ mapId, title }) {
     var mcpSavePending = false
     var isSaving = false
     var queuedSaveOptions = null
+    var AUTO_SAVE_INTERVAL_MS = 5000
+    var autoSaveTimer = null
+    var lastSavedSignature = null
+    var suppressNextAutoSave = false
+
+    // ── Web Worker 保活：防止后台标签页 WebSocket 被浏览器节流断开 ──
+    try {
+      var workerBlob = new Blob(["setInterval(function(){postMessage('ping')},15000)"], { type: 'application/javascript' })
+      var keepAliveWorker = new Worker(URL.createObjectURL(workerBlob))
+      keepAliveWorker.onmessage = function() {
+        if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+          try { mcpWs.send(JSON.stringify({ type: 'keepalive' })) } catch(e) {}
+        }
+      }
+    } catch(e) {}
+    // 标签页切到后台时立即发一次心跳，防止切换瞬间连接断开
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden && mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+        try { mcpWs.send(JSON.stringify({ type: 'keepalive' })) } catch(e) {}
+      }
+    })
 
     var statusEl = document.getElementById('mmStatus')
     var titleEl = document.getElementById('mmTitle')
@@ -184,6 +209,13 @@ export function buildEditHostHtml ({ mapId, title }) {
 
     function debouncedSave(data) {
       pendingData = data
+      // 服务端已落库的推送触发的保存：消费标记，更新签名，跳过重复 PUT
+      if (suppressNextAutoSave) {
+        suppressNextAutoSave = false
+        lastSavedSignature = JSON.stringify(data)
+        setStatus('已保存 (MCP)', '')
+        return
+      }
       if (mcpSavePending) {
         mcpSavePending = false
         flushSave({ manualSnapshot: false, updatedBy: 'mcp' })
@@ -240,6 +272,7 @@ export function buildEditHostHtml ({ mapId, title }) {
         }
         var result = await res.json()
         currentRevision = result.revision
+        lastSavedSignature = JSON.stringify(dataToSave)
         setStatus(options.updatedBy === 'mcp' ? '已保存 (MCP)' : '已保存', '')
       } catch (e) {
         console.error(e)
@@ -391,6 +424,32 @@ export function buildEditHostHtml ({ mapId, title }) {
     document.getElementById('mmShareBtn').onclick = showShareDialog
     document.getElementById('mmHistoryBtn').onclick = showHistoryDialog
 
+    // ── 「保存」按钮 ──
+    document.getElementById('mmSaveBtn').onclick = function() {
+      if (mindMapInstance && mindMapInstance.getData) {
+        mapData = Object.assign({}, mapData, mindMapInstance.getData(true))
+        pendingData = mapData
+      }
+      flushSave({ manualSnapshot: true, updatedBy: 'human' })
+    }
+
+    // ── 5 秒定时主动保存 ──
+    function autoSave_check() {
+      if (isSaving || !mindMapInstance || !mindMapInstance.getData) return
+      try {
+        var liveData = Object.assign({}, mapData, mindMapInstance.getData(true))
+        var liveSig = JSON.stringify(liveData)
+        if (pendingData || (lastSavedSignature && liveSig !== lastSavedSignature)) {
+          mapData = liveData
+          pendingData = liveData
+          flushSave({ manualSnapshot: false, updatedBy: 'human' })
+        }
+      } catch (e) {
+        console.warn('[AutoSave] 定时巡检异常', e)
+      }
+    }
+    autoSaveTimer = setInterval(autoSave_check, AUTO_SAVE_INTERVAL_MS)
+
     document.addEventListener('keydown', function(e) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault()
@@ -477,62 +536,72 @@ export function buildEditHostHtml ({ mapId, title }) {
       if (!mindMapInstance) return
       switch (msg.type) {
         case 'set_mind_map_data': {
-          var root = parseMarkdownToRoot(msg.data)
-          if (!root) return
-          var fullData = {
-            root: root,
-            layout: msg.layout || mindMapInstance.getLayout(),
-            theme: {
-              template: msg.theme || mindMapInstance.getTheme(),
-              config: mindMapInstance.getCustomThemeConfig ? mindMapInstance.getCustomThemeConfig() : {}
+          var fullData = msg.fullData
+          if (!fullData && msg.data) {
+            var root = parseMarkdownToRoot(msg.data)
+            if (!root) return
+            fullData = {
+              root: root,
+              layout: msg.layout || mindMapInstance.getLayout(),
+              theme: { template: msg.theme || mindMapInstance.getTheme(), config: mindMapInstance.getCustomThemeConfig ? mindMapInstance.getCustomThemeConfig() : {} }
             }
           }
-          mcpSavePending = true
+          if (!fullData) return
+          currentRevision = msg.revision || currentRevision
+          if (msg.title) { mapTitle = msg.title; titleEl.textContent = msg.title; titleEl.title = msg.title }
+          if (msg.savedByServer) suppressNextAutoSave = true
           window.$bus.$emit('setData', fullData)
           break
         }
         case 'set_mind_map_layout': {
           if (!msg.layout) return
+          currentRevision = msg.revision || currentRevision
+          if (msg.savedByServer) suppressNextAutoSave = true
           mindMapInstance.setLayout(msg.layout)
-          mcpSavePending = true
-          window.takeOverAppMethods.saveMindMapData(mindMapInstance.getData(true))
+          if (!msg.savedByServer) {
+            mcpSavePending = true
+            window.takeOverAppMethods.saveMindMapData(mindMapInstance.getData(true))
+          }
           break
         }
         case 'set_mind_map_theme': {
           if (!msg.theme) return
+          currentRevision = msg.revision || currentRevision
+          if (msg.savedByServer) suppressNextAutoSave = true
           mindMapInstance.setTheme(msg.theme)
-          mcpSavePending = true
-          window.takeOverAppMethods.saveMindMapData(mindMapInstance.getData(true))
+          if (!msg.savedByServer) {
+            mcpSavePending = true
+            window.takeOverAppMethods.saveMindMapData(mindMapInstance.getData(true))
+          }
           break
         }
         case 'export_mind_map_to': {
           if (msg.exportOnBrowser) {
             window.$bus.$emit('export', msg.exportType, true, '思维导图')
+            // 浏览器下载模式：回传确认给服务端
             if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
-              mcpWs.send(JSON.stringify({
-                type: 'export_mind_map_to',
-                exportOnBrowser: true,
-                id: msg.id
-              }))
+              mcpWs.send(JSON.stringify({ type: 'export_mind_map_to', id: msg.id, data: '' }))
             }
           } else {
-            mindMapInstance.export(msg.exportType, false, '思维导图').then(function(data) {
-              if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
-                mcpWs.send(JSON.stringify({
-                  type: 'export_mind_map_to',
-                  data: data,
-                  id: msg.id
-                }))
+            // 服务端保存模式：异步导出并回传数据
+            ;(async function() {
+              try {
+                if (mindMapInstance.renderer && mindMapInstance.renderer.isRendering) {
+                  await new Promise(function(resolve) {
+                    var timer = setTimeout(resolve, 3000)
+                    window.$bus.$once('node_tree_render_end', function() { clearTimeout(timer); resolve() })
+                  })
+                }
+                var exportData = await mindMapInstance.export(msg.exportType, false, '思维导图')
+                if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+                  mcpWs.send(JSON.stringify({ type: 'export_mind_map_to', data: exportData, id: msg.id }))
+                }
+              } catch (err) {
+                if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+                  mcpWs.send(JSON.stringify({ type: 'export_mind_map_to', error: err && err.message ? err.message : String(err), id: msg.id }))
+                }
               }
-            }).catch(function(err) {
-              if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
-                mcpWs.send(JSON.stringify({
-                  type: 'export_mind_map_to',
-                  error: err && err.message ? err.message : String(err),
-                  id: msg.id
-                }))
-              }
-            })
+            })()
           }
           break
         }
@@ -545,7 +614,7 @@ export function buildEditHostHtml ({ mapId, title }) {
     }
 
     function initMcpBridge() {
-      var wsUrl = window.__MCP_WS_URL__ || 'ws://localhost:3100'
+      var wsUrl = window.__MCP_WS_URL__ || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/mcp?mapId=' + encodeURIComponent(MAP_ID))
       try {
         mcpWs = new WebSocket(wsUrl)
       } catch (e) {
@@ -583,6 +652,8 @@ export function buildEditHostHtml ({ mapId, title }) {
 
     window.$bus.$on('app_inited', function(mm) {
       mindMapInstance = mm
+      // 初始化签名
+      if (mapData) lastSavedSignature = JSON.stringify(mapData)
       initMcpBridge()
     })
 

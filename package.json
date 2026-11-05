@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server/server.mjs",
+    "mcp": "node server/mcp.mjs",
     "test": "node server/tests/smoke.mjs",
     "import": "node server/scripts/import.mjs"
   },

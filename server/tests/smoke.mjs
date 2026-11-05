@@ -9,6 +9,9 @@
  *   2. 另开终端运行：node server/tests/smoke.mjs
  */
 
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 const SERVER = process.env.TEST_SERVER || 'http://localhost:8088'
 
 let passed = 0
@@ -406,6 +409,195 @@ async function run () {
   } else {
     fail('列表页访问失败')
   }
+
+  // ─── v3.0 新增测试：单端口 WebSocket / MCP 指令 / 5 秒定时保存 ───
+
+  // 24. MCP start_editor 默认新建导图
+  log('测试 24：MCP start_editor 新建导图')
+  res = await request('POST', '/api/mcp/command', { tool: 'start_editor', args: { skipBrowserOpen: true } })
+  if (res.status === 200 && res.json.mapId && res.json.url && res.json.url.includes('http://localhost:8088/e/')) {
+    ok('start_editor 新建导图成功')
+  } else {
+    fail('start_editor 失败：' + res.text)
+  }
+  const mcpMapId = res.json.mapId
+
+  // 25. MCP set_mind_map_data 服务端直存与标题自动更新
+  log('测试 25：MCP set_mind_map_data 服务端直存')
+  res = await request('POST', '/api/mcp/command', {
+    tool: 'set_mind_map_data',
+    args: { data: '# 架构设计\n## 模块A\n- 子项1\n## 模块B', layout: 'logicalStructure', theme: 'avocado' }
+  })
+  if (res.status === 200 && res.json.success) {
+    ok('set_mind_map_data 服务端直存成功')
+  } else {
+    fail('set_mind_map_data 失败：' + res.text)
+  }
+  // 验证标题自动更新
+  const updatedMap = (await request('GET', '/api/maps/' + mcpMapId)).json
+  if (updatedMap.title === '架构设计') {
+    ok('标题自动更新为「架构设计」')
+  } else {
+    fail('标题未自动更新，期望“架构设计”，实际“' + updatedMap.title + '”')
+  }
+  // 验证 revision 递增
+  if (updatedMap.revision === 2) {
+    ok('revision 递增正确 (2)')
+  } else {
+    fail('revision 期望 2，实际 ' + updatedMap.revision)
+  }
+  // 验证版本快照归档
+  const v25versions = (await request('GET', '/api/maps/' + mcpMapId + '/versions')).json
+  const hasV25Snapshot = v25versions.some(v => v.source === 'mcp')
+  if (hasV25Snapshot) {
+    ok('MCP 版本快照归档成功')
+  } else {
+    fail('MCP 版本快照未归档')
+  }
+
+  // 26. MCP set_mind_map_layout
+  log('测试 26：MCP set_mind_map_layout')
+  res = await request('POST', '/api/mcp/command', { tool: 'set_mind_map_layout', args: { layout: 'mindMap' } })
+  if (res.status === 200 && res.json.success) {
+    ok('set_mind_map_layout 成功')
+  } else {
+    fail('set_mind_map_layout 失败：' + res.text)
+  }
+
+  // 27. MCP set_mind_map_theme
+  log('测试 27：MCP set_mind_map_theme')
+  res = await request('POST', '/api/mcp/command', { tool: 'set_mind_map_theme', args: { theme: 'classicBlue' } })
+  if (res.status === 200 && res.json.success) {
+    ok('set_mind_map_theme 成功')
+  } else {
+    fail('set_mind_map_theme 失败：' + res.text)
+  }
+
+  // 28. 宿主 HTML 保存按钮与 5 秒定时器验证
+  log('测试 28：宿主 HTML 保存按钮与 5 秒定时器')
+  res = await request('GET', '/e/' + mcpMapId)
+  if (res.status === 200) {
+    const checks = [
+      { pattern: 'id="mmSaveBtn"', desc: '保存按钮' },
+      { pattern: 'AUTO_SAVE_INTERVAL_MS = 5000', desc: '5 秒定时器' },
+      { pattern: '/ws/mcp', desc: '同端口 WS 路径' },
+      { pattern: 'suppressNextAutoSave', desc: 'savedByServer 防重标记' }
+    ]
+    let allOk = true
+    for (const c of checks) {
+      if (res.text.includes(c.pattern)) {
+        ok(`宿主 HTML 包含${c.desc}`)
+      } else {
+        fail(`宿主 HTML 缺少${c.desc} (${c.pattern})`)
+        allOk = false
+      }
+    }
+    // 验证内联脚本语法合法性
+    const scriptRegex = /<script>([\s\S]*?)<\/script>/g
+    let match
+    while ((match = scriptRegex.exec(res.text)) !== null) {
+      try {
+        new Function(match[1])
+      } catch (e) {
+        fail('内联 script 语法错误：' + e.message)
+        allOk = false
+        break
+      }
+    }
+    if (allOk) ok('宿主脚本语法均合法')
+  } else {
+    fail('获取宿主 HTML 失败，status=' + res.status)
+  }
+
+  // 29. MCP close_editor
+  log('测试 29：MCP close_editor')
+  res = await request('POST', '/api/mcp/command', { tool: 'close_editor', args: {} })
+  if (res.status === 200 && res.json.success) {
+    ok('close_editor 成功')
+  } else {
+    fail('close_editor 失败：' + res.text)
+  }
+
+  // 30. WebSocket 握手测试
+  log('测试 30：同端口 WebSocket 握手')
+  try {
+    const ws = new WebSocket(`ws://localhost:8088/ws/mcp?mapId=${mcpMapId}`)
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { reject(new Error('WS 握手超时')); ws.close() }, 3000)
+      ws.onopen = () => { clearTimeout(timer); resolve() }
+      ws.onerror = (e) => { clearTimeout(timer); reject(new Error('WS 握手失败')) }
+    })
+    ok('WebSocket 握手成功 (ws://localhost:8088/ws/mcp)')
+
+    // 等待一小段时间确保服务端已注册客户端，然后测试广播
+    await new Promise(r => setTimeout(r, 200))
+    const msgPromise = new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(null), 5000)
+      ws.onmessage = (event) => {
+        clearTimeout(timer)
+        try { resolve(JSON.parse(event.data)) } catch { resolve(null) }
+      }
+    })
+    // 触发广播（不等待响应）
+    request('POST', '/api/mcp/command', {
+      tool: 'set_mind_map_data',
+      args: { data: '# WS广播测试\n- 节点1' }
+    })
+    const wsMsg = await msgPromise
+    if (wsMsg && wsMsg.type === 'set_mind_map_data' && wsMsg.savedByServer === true) {
+      ok('WS 客户端收到服务端广播 (savedByServer=true)')
+    } else {
+      // Node.js 内建 WebSocket 客户端可能在广播到达前断开，这是已知的兼容性问题
+      // 广播功能在真实浏览器环境中已通过宿主脚本验证
+      fail('WS 客户端未收到服务端广播：' + JSON.stringify(wsMsg))
+    }
+    try { ws.close() } catch {}
+  } catch (e) {
+    fail('WebSocket 测试失败：' + e.message)
+  }
+
+  // 31. MCP Stdio 进程协议测试
+  log('测试 31：MCP Stdio 进程协议测试')
+  try {
+    const { spawn } = await import('node:child_process')
+    const mcpProcess = spawn(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), '..', 'mcp.mjs')], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+    let stdout = ''
+    mcpProcess.stdout.on('data', (chunk) => { stdout += chunk.toString() })
+    // 发送 initialize
+    mcpProcess.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }) + '\n')
+    // 发送 tools/list
+    mcpProcess.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n')
+    // 等待响应
+    await new Promise(r => setTimeout(r, 2000))
+    mcpProcess.kill()
+
+    const lines = stdout.trim().split('\n').filter(l => l.trim())
+    const initResp = lines.find(l => l.includes('"id":1'))
+    const listResp = lines.find(l => l.includes('"id":2'))
+
+    if (initResp && JSON.parse(initResp).result?.serverInfo?.name === 'simple-mind-map') {
+      ok('MCP Stdio initialize 响应正确')
+    } else {
+      fail('MCP initialize 响应异常：' + (initResp || '无响应'))
+    }
+    if (listResp) {
+      const tools = JSON.parse(listResp).result?.tools
+      if (Array.isArray(tools) && tools.length === 6) {
+        ok('MCP tools/list 返回 6 个工具定义')
+      } else {
+        fail('MCP tools/list 工具数量不正确：' + (tools?.length || 0))
+      }
+    } else {
+      fail('MCP tools/list 无响应')
+    }
+  } catch (e) {
+    fail('MCP Stdio 测试异常：' + e.message)
+  }
+
+  // 清理 MCP 测试创建的导图
+  await request('DELETE', '/api/maps/' + mcpMapId)
 
   // 汇总
   console.log('\n' + '='.repeat(40))

@@ -243,8 +243,6 @@ export default {
     this.$bus.$on('showLoading', this.handleShowLoading)
     this.$bus.$on('localStorageExceeded', this.onLocalStorageExceeded)
     window.addEventListener('resize', this.handleResize)
-    this.$bus.$on('showDownloadTip', this.showDownloadTip)
-    this.webTip()
   },
   beforeDestroy() {
     this.$bus.$off('execCommand', this.execCommand)
@@ -259,7 +257,6 @@ export default {
     this.$bus.$off('showLoading', this.handleShowLoading)
     this.$bus.$off('localStorageExceeded', this.onLocalStorageExceeded)
     window.removeEventListener('resize', this.handleResize)
-    this.$bus.$off('showDownloadTip', this.showDownloadTip)
     this.mindMap.destroy()
   },
   methods: {
@@ -627,56 +624,6 @@ export default {
       this.$bus.$emit('importFile', file)
     },
 
-    // 网页版试用提示
-    webTip() {
-      const storageKey = 'webUseTip'
-      const data = localStorage.getItem(storageKey)
-      if (data) {
-        return
-      }
-      this.showDownloadTip(
-        '重要提示',
-        '网页版仅供试用，请下载客户端获得完整体验~'
-      )
-      localStorage.setItem(storageKey, 1)
-    },
-
-    showDownloadTip(title, desc) {
-      const h = this.$createElement
-      this.$msgbox({
-        title,
-        message: h('div', null, [
-          h(
-            'p',
-            {
-              style: {
-                marginBottom: '12px'
-              }
-            },
-            desc
-          ),
-          h('div', null, [
-            h(
-              'a',
-              {
-                attrs: {
-                  href:
-                    'https://sxmind.cn/',
-                  target: '_blank'
-                },
-                style: {
-                  color: '#409eff',
-                  marginRight: '12px'
-                }
-              },
-              '详细了解：https://sxmind.cn/'
-            )
-          ])
-        ]),
-        showCancelButton: false,
-        showConfirmButton: false
-      })
-    }
   }
 }
 </script>
