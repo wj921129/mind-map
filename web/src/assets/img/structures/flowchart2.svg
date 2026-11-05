@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
+  <!-- 结构缩略图：树状分叉流程图2（方案 A2：统一矩形判断框 + 连线条件小框） -->
+  <rect x="0" y="0" width="320" height="200" fill="#ffffff"/>
+  <g stroke="#94a3b8" stroke-width="1.2" fill="none" stroke-linecap="round">
+    <!-- 开始节点 → 判断节点 -->
+    <path d="M160,36 L160,54"/>
+    <!-- 矩形判断节点底边正中出线 + 安全横梁 -->
+    <path d="M160,82 L160,108 L80,108 L80,114"/>
+    <path d="M160,108 L240,108 L240,114"/>
+    <!-- 条件框 → 下游执行节点 -->
+    <path d="M80,127 L80,140"/>
+    <path d="M240,127 L240,140"/>
+  </g>
+  <g stroke="#94a3b8" stroke-width="1.2" fill="#94a3b8">
+    <path d="M77.6,140 L82.4,140 L80,145 Z" stroke="none"/>
+    <path d="M237.6,140 L242.4,140 L240,145 Z" stroke="none"/>
+  </g>
+  <!-- 开始节点 -->
+  <rect x="116" y="12" width="88" height="24" rx="3" fill="#f3f6fb" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- 判断节点：紧凑矩形 -->
+  <rect x="122" y="54" width="76" height="28" rx="3" fill="#f3f6fb" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- 连接线上的条件小框 -->
+  <rect x="52" y="114" width="56" height="13" rx="3" fill="#ffffff" stroke="#dcdfe6" stroke-width="1"/>
+  <rect x="212" y="114" width="56" height="13" rx="3" fill="#ffffff" stroke="#dcdfe6" stroke-width="1"/>
+  <!-- 下游执行节点 -->
+  <rect x="40" y="145" width="80" height="24" rx="2" fill="#f3f6fb" stroke="#cbd5e1" stroke-width="1.5"/>
+  <rect x="200" y="145" width="80" height="24" rx="2" fill="#f3f6fb" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- 左右分支继续向下延伸 -->
+  <g stroke="#94a3b8" stroke-width="1.2" fill="none" stroke-linecap="round">
+    <path d="M80,169 L80,180"/>
+    <path d="M240,169 L240,180"/>
+  </g>
+  <g stroke="#94a3b8" stroke-width="1.2" fill="#f3f6fb">
+    <path d="M77.6,180 L82.4,180 L80,185 Z" stroke="none"/>
+    <path d="M237.6,180 L242.4,180 L240,185 Z" stroke="none"/>
+  </g>
+</svg>

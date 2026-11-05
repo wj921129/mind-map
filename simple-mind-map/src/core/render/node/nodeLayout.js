@@ -168,8 +168,27 @@ function getNodeRect() {
   }
   const { paddingX, paddingY } = this.getPaddingVale()
   // 计算节点形状需要的附加内边距
-  const { paddingX: shapePaddingX, paddingY: shapePaddingY } =
-    this.shapeInstance.getShapePadding(_width, _height, paddingX, paddingY)
+  // 布局可以提供形状内边距覆写，如流程图布局收紧菱形判断框的尺寸
+  let shapePadding = null
+  const layout = this.mindMap.renderer && this.mindMap.renderer.layout
+  if (layout && typeof layout.getNodeShapePadding === 'function') {
+    shapePadding = layout.getNodeShapePadding(
+      this,
+      _width,
+      _height,
+      paddingX,
+      paddingY
+    )
+  }
+  if (!shapePadding) {
+    shapePadding = this.shapeInstance.getShapePadding(
+      _width,
+      _height,
+      paddingX,
+      paddingY
+    )
+  }
+  const { paddingX: shapePaddingX, paddingY: shapePaddingY } = shapePadding
   this.shapePadding.paddingX = shapePaddingX
   this.shapePadding.paddingY = shapePaddingY
   // 边框宽度，因为边框是以中线向两端发散，所以边框会超出节点

@@ -13,7 +13,9 @@ export const layoutImgMap = {
   rightFishbone2: require('../assets/img/structures/rightFishbone2.jpg'),
   verticalTimeline: require('../assets/img/structures/verticalTimeline.jpg'),
   verticalTimeline2: require('../assets/img/structures/verticalTimeline2.jpg'),
-  verticalTimeline3: require('../assets/img/structures/verticalTimeline3.jpg')
+  verticalTimeline3: require('../assets/img/structures/verticalTimeline3.jpg'),
+  flowchart: require('../assets/img/structures/flowchart.svg'),
+  flowchart2: require('../assets/img/structures/flowchart2.svg')
 }
 
 // 公式列表
@@ -47,14 +49,18 @@ export const supportLineStyleLayoutsMap = {
     'logicalStructureLeft',
     'mindMap',
     'verticalTimeline',
-    'organizationStructure'
+    'organizationStructure',
+    'flowchart',
+    'flowchart2'
   ],
   direct: [
     'logicalStructure',
     'logicalStructureLeft',
     'mindMap',
     'organizationStructure',
-    'verticalTimeline'
+    'verticalTimeline',
+    'flowchart',
+    'flowchart2'
   ]
 }
 
@@ -63,7 +69,9 @@ export const supportLineRadiusLayouts = [
   'logicalStructure',
   'logicalStructureLeft',
   'mindMap',
-  'verticalTimeline'
+  'verticalTimeline',
+  'flowchart',
+  'flowchart2'
 ]
 
 // 支持只显示底边直线风格的结构

@@ -94,9 +94,14 @@ class Style {
       defaultConfig = themeConfig.node
     }
     let value = ''
+    // 布局层提供的角色默认样式，如流程图中判断框、条件框的专属配色
+    const layoutDefaultValue = this.getLayoutDefaultStyle(prop, useRoot)
     // 优先使用节点本身的样式
     if (this.getSelfStyle(prop) !== undefined) {
       value = this.getSelfStyle(prop)
+    } else if (layoutDefaultValue !== undefined) {
+      // 其次使用布局提供的角色默认样式
+      value = layoutDefaultValue
     } else if (defaultConfig[prop] !== undefined) {
       // 否则使用对应层级的样式
       value = defaultConfig[prop]
@@ -110,6 +115,20 @@ class Style {
       })
     }
     return value
+  }
+
+  //  获取布局层提供的角色默认样式
+  getLayoutDefaultStyle(prop, useRoot) {
+    // 根节点样式、概要节点样式不支持被布局角色样式覆盖
+    if (useRoot || this.ctx.isGeneralization) {
+      return undefined
+    }
+    const renderer = this.ctx.mindMap.renderer
+    const layout = renderer && renderer.layout
+    if (!layout || typeof layout.getNodeDefaultStyle !== 'function') {
+      return undefined
+    }
+    return layout.getNodeDefaultStyle(this.ctx, prop)
   }
 
   //  获取某个样式值

@@ -701,5 +701,9 @@ export const layoutGroupList = [
   {
     name: 'Bản đồ Fishbone',
     list: ['fishbone']
+  },
+  {
+    name: 'Sơ đồ Flowchart',
+    list: ['flowchart', 'flowchart2']
   }
 ]
