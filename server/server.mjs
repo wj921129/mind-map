@@ -180,7 +180,8 @@ async function handleApi (req, res, method, pathname) {
       const id = generateId()
       const title = body.title || '未命名导图'
       const data = body.data || DEFAULT_DATA
-      const map = createMap({ id, title, data, updatedBy: 'human' })
+      const updatedBy = body.source || body.updatedBy || 'human'
+      const map = createMap({ id, title, data, updatedBy })
       sendJson(res, 201, map)
       return
     }
@@ -222,7 +223,7 @@ async function handleApi (req, res, method, pathname) {
         updatedBy
       })
       // 版本快照逻辑
-      if (body.manualSnapshot || shouldArchiveVersion(params.id, newData)) {
+      if (body.manualSnapshot || updatedBy === 'mcp' || shouldArchiveVersion(params.id, newData)) {
         createVersion({
           mapId: params.id,
           revision: map.revision,

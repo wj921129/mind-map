@@ -65,6 +65,7 @@ export function buildEditHostHtml ({ mapId, title }) {
     window.externalPublicPath = '/dist/'
     window.takeOverApp = true
     window.__MAP_ID__ = '${escapeJs(mapId)}'
+    window.__MCP_WS_URL__ = 'ws://localhost:3100'
   </script>
   ${cssLinks}
   <style>
@@ -152,6 +153,10 @@ export function buildEditHostHtml ({ mapId, title }) {
     var manualSavePending = false
     var mapData = null
     var mapTitle = ''
+    var mindMapInstance = null
+    var mcpSavePending = false
+    var isSaving = false
+    var queuedSaveOptions = null
 
     var statusEl = document.getElementById('mmStatus')
     var titleEl = document.getElementById('mmTitle')
@@ -179,29 +184,48 @@ export function buildEditHostHtml ({ mapId, title }) {
 
     function debouncedSave(data) {
       pendingData = data
-      if (manualSavePending) {
+      if (mcpSavePending) {
+        mcpSavePending = false
+        flushSave({ manualSnapshot: false, updatedBy: 'mcp' })
+      } else if (manualSavePending) {
         manualSavePending = false
-        flushSave()
+        flushSave({ manualSnapshot: true, updatedBy: 'human' })
       } else {
         clearTimeout(saveTimer)
-        saveTimer = setTimeout(flushSave, 1500)
+        saveTimer = setTimeout(function() {
+          flushSave({ manualSnapshot: false, updatedBy: 'human' })
+        }, 1500)
+        setStatus('待保存...', '')
       }
-      setStatus('待保存...', '')
     }
 
-    async function flushSave() {
+    async function flushSave(options) {
+      options = options || { manualSnapshot: false, updatedBy: 'human' }
       clearTimeout(saveTimer)
-      if (!pendingData) return
+
+      // 若手动保存时 pendingData 已清空，回退使用当前 mapData
+      var dataToSave = pendingData || (options.manualSnapshot ? mapData : null)
+      if (!dataToSave) return
+
+      // 防并发重入：若当前有 PUT 请求在途，排入队列待完成后执行
+      if (isSaving) {
+        queuedSaveOptions = options
+        return
+      }
+
+      isSaving = true
+      pendingData = null
       setStatus('保存中...', 'saving')
       try {
         var res = await fetch('/api/maps/' + MAP_ID, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            data: pendingData,
+            data: dataToSave,
             revision: currentRevision,
             title: mapTitle,
-            manualSnapshot: false
+            manualSnapshot: !!options.manualSnapshot,
+            updatedBy: options.updatedBy || 'human'
           })
         })
         if (res.status === 409) {
@@ -216,11 +240,17 @@ export function buildEditHostHtml ({ mapId, title }) {
         }
         var result = await res.json()
         currentRevision = result.revision
-        pendingData = null
-        setStatus('已保存', '')
+        setStatus(options.updatedBy === 'mcp' ? '已保存 (MCP)' : '已保存', '')
       } catch (e) {
         console.error(e)
         setStatus('保存失败', 'conflict')
+      } finally {
+        isSaving = false
+        if (queuedSaveOptions) {
+          var nextOpts = queuedSaveOptions
+          queuedSaveOptions = null
+          flushSave(nextOpts)
+        }
       }
     }
 
@@ -362,10 +392,10 @@ export function buildEditHostHtml ({ mapId, title }) {
     document.getElementById('mmHistoryBtn').onclick = showHistoryDialog
 
     document.addEventListener('keydown', function(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault()
-        manualSavePending = true
-        flushSave()
+        // 直接触发带快照的立即保存；若 Edit.vue 随后触发 debouncedSave，由 isSaving 队列合并防重
+        flushSave({ manualSnapshot: true, updatedBy: 'human' })
       }
     })
 
@@ -382,6 +412,179 @@ export function buildEditHostHtml ({ mapId, title }) {
       getLocalConfig: function() { return null },
       saveLocalConfig: function() {}
     }
+
+    // ---- Markdown 解析为导图节点树 ----
+    function parseMarkdownToRoot(md) {
+      if (!md || !md.trim()) return null
+      var lines = md.split(new RegExp('\\\\r?\\\\n'))
+      var root = { data: { text: '中心主题' }, children: [] }
+      var stack = [{ node: root, depth: -1 }]
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i]
+        var trimmed = line.trim()
+        if (!trimmed) continue
+
+        var depth = -1
+        var text = ''
+
+        // 解析标题层级 (# ~ ######)
+        var hMatch = line.match(new RegExp('^(#{1,6})\\\\s+(.*)'))
+        if (hMatch) {
+          depth = hMatch[1].length - 1
+          text = hMatch[2].replace(new RegExp('[*_\x60]', 'g'), '').trim()
+        } else {
+          // 解析列表项 (- / * / + / 1.)
+          var lMatch = line.match(new RegExp('^(\\\\s*)[\\\\-\\\\*\\\\+]\\\\s+(.*)'))
+          if (!lMatch) lMatch = line.match(new RegExp('^(\\\\s*)\\\\d+\\\\.\\\\s+(.*)'))
+          if (lMatch) {
+            var indent = lMatch[1].length
+            depth = Math.floor(indent / 2) + 1
+            text = lMatch[2].replace(new RegExp('[*_\x60]', 'g'), '').trim()
+          }
+        }
+        if (depth < 0 || !text) continue
+
+        var node = { data: { text: text }, children: [] }
+
+        if (depth > stack[stack.length - 1].depth) {
+          // 更深层级 → 作为上一个节点的子节点
+          stack[stack.length - 1].node.children.push(node)
+        } else if (depth === stack[stack.length - 1].depth) {
+          // 同级 → 出栈到父节点
+          stack.pop()
+          stack[stack.length - 1].node.children.push(node)
+        } else {
+          // 更浅层级 → 一直出栈直到找到合适的父节点
+          while (stack.length > 1 && stack[stack.length - 1].depth >= depth) {
+            stack.pop()
+          }
+          stack[stack.length - 1].node.children.push(node)
+        }
+        stack.push({ node: node, depth: depth })
+      }
+
+      return root.children[0] || root
+    }
+
+    // ---- MCP WebSocket 桥接 ----
+    var mcpWs = null
+    var mcpManualClose = false
+    var mcpReconnectDelay = 1000
+    var mcpMaxReconnectDelay = 15000
+
+    function handleMcpMessage(msg) {
+      if (!mindMapInstance) return
+      switch (msg.type) {
+        case 'set_mind_map_data': {
+          var root = parseMarkdownToRoot(msg.data)
+          if (!root) return
+          var fullData = {
+            root: root,
+            layout: msg.layout || mindMapInstance.getLayout(),
+            theme: {
+              template: msg.theme || mindMapInstance.getTheme(),
+              config: mindMapInstance.getCustomThemeConfig ? mindMapInstance.getCustomThemeConfig() : {}
+            }
+          }
+          mcpSavePending = true
+          window.$bus.$emit('setData', fullData)
+          break
+        }
+        case 'set_mind_map_layout': {
+          if (!msg.layout) return
+          mindMapInstance.setLayout(msg.layout)
+          mcpSavePending = true
+          window.takeOverAppMethods.saveMindMapData(mindMapInstance.getData(true))
+          break
+        }
+        case 'set_mind_map_theme': {
+          if (!msg.theme) return
+          mindMapInstance.setTheme(msg.theme)
+          mcpSavePending = true
+          window.takeOverAppMethods.saveMindMapData(mindMapInstance.getData(true))
+          break
+        }
+        case 'export_mind_map_to': {
+          if (msg.exportOnBrowser) {
+            window.$bus.$emit('export', msg.exportType, true, '思维导图')
+            if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+              mcpWs.send(JSON.stringify({
+                type: 'export_mind_map_to',
+                exportOnBrowser: true,
+                id: msg.id
+              }))
+            }
+          } else {
+            mindMapInstance.export(msg.exportType, false, '思维导图').then(function(data) {
+              if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+                mcpWs.send(JSON.stringify({
+                  type: 'export_mind_map_to',
+                  data: data,
+                  id: msg.id
+                }))
+              }
+            }).catch(function(err) {
+              if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+                mcpWs.send(JSON.stringify({
+                  type: 'export_mind_map_to',
+                  error: err && err.message ? err.message : String(err),
+                  id: msg.id
+                }))
+              }
+            })
+          }
+          break
+        }
+        case 'close_editor': {
+          mcpManualClose = true
+          if (mcpWs) mcpWs.close()
+          break
+        }
+      }
+    }
+
+    function initMcpBridge() {
+      var wsUrl = window.__MCP_WS_URL__ || 'ws://localhost:3100'
+      try {
+        mcpWs = new WebSocket(wsUrl)
+      } catch (e) {
+        // MCP Server 尚未启动，静默降级并安排重连
+        setTimeout(initMcpBridge, mcpReconnectDelay)
+        mcpReconnectDelay = Math.min(mcpReconnectDelay * 2, mcpMaxReconnectDelay)
+        return
+      }
+
+      mcpWs.onmessage = function(event) {
+        try {
+          var msg = JSON.parse(event.data)
+          handleMcpMessage(msg)
+        } catch (e) {
+          console.warn('[MCP] 消息解析失败', e)
+        }
+      }
+
+      mcpWs.onopen = function() {
+        mcpReconnectDelay = 1000
+      }
+
+      mcpWs.onclose = function() {
+        mcpWs = null
+        if (mcpManualClose) return
+        // 指数退避静默重连
+        setTimeout(initMcpBridge, mcpReconnectDelay)
+        mcpReconnectDelay = Math.min(mcpReconnectDelay * 2, mcpMaxReconnectDelay)
+      }
+
+      mcpWs.onerror = function() {
+        // 静默处理，onclose 会触发重连
+      }
+    }
+
+    window.$bus.$on('app_inited', function(mm) {
+      mindMapInstance = mm
+      initMcpBridge()
+    })
 
     window.onload = async function() {
       await fetchMap()

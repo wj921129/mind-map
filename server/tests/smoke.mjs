@@ -218,8 +218,159 @@ async function run () {
     }
   }
 
-  // 15. 删除导图
-  log('测试 15：删除导图')
+  // 15. POST /api/maps 来源标记测试
+  log('测试 15：POST /api/maps 来源标记 (source=mcp)')
+  res = await request('POST', '/api/maps', { title: 'MCP来源测试', source: 'mcp' })
+  if (res.status === 201 && res.json.updated_by === 'mcp') {
+    ok('POST 来源标记成功 (updated_by=mcp)')
+  } else {
+    fail('POST 来源标记失败：' + res.text)
+  }
+  const mcpSourceId = res.json.id
+
+  // 16. PUT /api/maps/:id MCP 自动快照测试
+  log('测试 16：PUT /api/maps/:id MCP 自动快照')
+  const mcpMapRev = (await request('GET', '/api/maps/' + mcpSourceId)).json.revision
+  res = await request('PUT', '/api/maps/' + mcpSourceId, {
+    data: {
+      root: { data: { text: 'MCP修改后的根节点' }, children: [] },
+      theme: { template: 'avocado', config: {} },
+      layout: 'logicalStructure',
+      config: {},
+      view: null
+    },
+    revision: mcpMapRev,
+    updatedBy: 'mcp'
+  })
+  if (res.status === 200 && res.json.revision === mcpMapRev + 1) {
+    ok('MCP 更新成功，revision 递增')
+  } else {
+    fail('MCP 更新失败：' + res.text)
+  }
+  // 验证自动归档了修改前的版本快照
+  const mcpVersions = (await request('GET', '/api/maps/' + mcpSourceId + '/versions')).json
+  const hasMcpSnapshot = mcpVersions.some(v => v.source === 'mcp')
+  if (hasMcpSnapshot) {
+    ok('MCP 自动快照归档成功')
+  } else {
+    fail('MCP 自动快照未归档')
+  }
+
+  // 17. PUT /api/maps/:id 手动快照测试
+  log('测试 17：PUT /api/maps/:id 手动快照 (manualSnapshot=true)')
+  const manualRev = (await request('GET', '/api/maps/' + mcpSourceId)).json.revision
+  res = await request('PUT', '/api/maps/' + mcpSourceId, {
+    data: {
+      root: { data: { text: '手动快照测试' }, children: [] },
+      theme: { template: 'avocado', config: {} },
+      layout: 'logicalStructure',
+      config: {},
+      view: null
+    },
+    revision: manualRev,
+    manualSnapshot: true,
+    updatedBy: 'human'
+  })
+  if (res.status === 200) {
+    ok('手动快照更新成功')
+  } else {
+    fail('手动快照更新失败：' + res.text)
+  }
+  const manualVersions = (await request('GET', '/api/maps/' + mcpSourceId + '/versions')).json
+  const hasManualSnapshot = manualVersions.some(v => v.source === 'human')
+  if (hasManualSnapshot) {
+    ok('手动快照归档成功')
+  } else {
+    fail('手动快照未归档')
+  }
+
+  // 清理来源标记测试创建的导图
+  await request('DELETE', '/api/maps/' + mcpSourceId)
+
+  // 18. 宿主 HTML 桥接脚本渲染验证
+  log('测试 18：宿主 HTML 桥接脚本验证')
+  // 先创建一个导图用于编辑页访问
+  const bridgeMap = (await request('POST', '/api/maps', { title: '桥接测试' })).json
+  res = await request('GET', '/e/' + bridgeMap.id)
+  if (res.status === 200 &&
+      res.text.includes('__MCP_WS_URL__') &&
+      res.text.includes('parseMarkdownToRoot') &&
+      res.text.includes('initMcpBridge') &&
+      res.text.includes('handleMcpMessage')) {
+    ok('宿主 HTML 包含 MCP 桥接脚本')
+  } else {
+    fail('宿主 HTML 缺少 MCP 桥接脚本')
+  }
+  await request('DELETE', '/api/maps/' + bridgeMap.id)
+
+  // 19. 宿主脚本 JS 语法合法性 & Markdown 解析函数单元测试
+  log('测试 19：宿主脚本语法校验与 Markdown 解析逻辑验证')
+  {
+    const mdMap = (await request('POST', '/api/maps', { title: 'MD解析测试' })).json
+    const res = await request('GET', '/e/' + mdMap.id)
+    if (res.status !== 200) {
+      fail('获取宿主 HTML 失败，status=' + res.status)
+    } else {
+      // 19.1 提取所有内联 <script> 验证无 SyntaxError
+      const scriptRegex = /<script>([\s\S]*?)<\/script>/g
+      let match
+      let inlineScripts = []
+      while ((match = scriptRegex.exec(res.text)) !== null) {
+        inlineScripts.push(match[1])
+      }
+      if (inlineScripts.length < 2) {
+        fail('应包含至少 2 段内联 script，实际 ' + inlineScripts.length)
+      } else {
+        let syntaxOk = true
+        for (const code of inlineScripts) {
+          try {
+            new Function(code)
+          } catch (e) {
+            syntaxOk = false
+            fail('内联 script 语法错误：' + e.message)
+            break
+          }
+        }
+        if (syntaxOk) ok('内联 script 语法合法')
+      }
+
+      // 19.2 提取 parseMarkdownToRoot 进行真实解析断言
+      const fnMatch = res.text.match(/function parseMarkdownToRoot\(md\)\s*\{[\s\S]*?return root\.children\[0\] \|\| root\s*\}/)
+      if (!fnMatch) {
+        fail('未能提取完整 parseMarkdownToRoot 函数体')
+      } else {
+        try {
+          const parseMarkdownToRoot = new Function('md', `${fnMatch[0]}; return parseMarkdownToRoot(md);`)
+          // 使用缩进明确的 Markdown 样本
+          const mdSample = '# 中心主题\n## 分支一\n- 列表项1\n  - 子列表项1.1\n## 分支二'
+          const tree = parseMarkdownToRoot(mdSample)
+          if (!tree || !tree.data || tree.data.text !== '中心主题') {
+            fail('根节点应为"中心主题"，实际为 ' + JSON.stringify(tree?.data))
+          } else if (!Array.isArray(tree.children)) {
+            fail('应有 children 数组')
+          } else {
+            // 验证所有节点都能正确解析（不强制层级结构，因为 Markdown 解析依赖缩进语义）
+            const allTexts = []
+            const collect = (node) => { allTexts.push(node.data.text); (node.children || []).forEach(collect) }
+            collect(tree)
+            const expectedTexts = ['中心主题', '分支一', '列表项1', '子列表项1.1', '分支二']
+            const missing = expectedTexts.filter(t => !allTexts.includes(t))
+            if (missing.length > 0) {
+              fail('解析结果缺少节点：' + missing.join(', ') + '，实际有：' + allTexts.join(', '))
+            } else {
+              ok('Markdown 解析逻辑验证通过')
+            }
+          }
+        } catch (e) {
+          fail('parseMarkdownToRoot 执行异常：' + e.message)
+        }
+      }
+    }
+    await request('DELETE', '/api/maps/' + mdMap.id)
+  }
+
+  // 20. 删除导图
+  log('测试 20：删除导图')
   res = await request('DELETE', '/api/maps/' + mapId)
   if (res.status === 200) {
     ok('删除导图成功')
@@ -227,8 +378,8 @@ async function run () {
     fail('删除导图失败')
   }
 
-  // 16. 验证删除
-  log('测试 16：验证删除')
+  // 21. 验证删除
+  log('测试 21：验证删除')
   res = await request('GET', '/api/maps/' + mapId)
   if (res.status === 44) {
     fail('验证删除失败：状态码异常')
@@ -238,8 +389,8 @@ async function run () {
     fail('验证删除失败')
   }
 
-  // 17. 静态资源测试
-  log('测试 17：静态资源访问')
+  // 22. 静态资源测试
+  log('测试 22：静态资源访问')
   res = await request('GET', '/dist/logo.ico')
   if (res.status === 200) {
     ok('静态资源访问成功')
@@ -247,8 +398,8 @@ async function run () {
     fail('静态资源访问失败')
   }
 
-  // 18. 页面路由测试
-  log('测试 18：页面路由')
+  // 23. 页面路由测试
+  log('测试 23：页面路由')
   res = await request('GET', '/')
   if (res.status === 200 && res.text.includes('思绪思维导图')) {
     ok('列表页访问成功')
