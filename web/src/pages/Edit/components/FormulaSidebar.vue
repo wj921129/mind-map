@@ -114,6 +114,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .box {
   padding: 10px;
   width: 100%;
@@ -124,32 +126,39 @@ export default {
 
   &.isDark {
     .title {
-      color: #fff;
+      color: @dark-text-main;
     }
 
     .formulaList {
       .formulaItem {
+        border-color: @dark-border;
+
+        &:last-of-type {
+          border-bottom-color: @dark-border;
+        }
+
         .overview,
         .text {
-          color: #fff;
+          color: @dark-text-main;
         }
 
         .text {
-          background-color: #363b3f;
+          background-color: @dark-panel;
+          border-left-color: @dark-border;
         }
       }
     }
 
     /deep/ .el-textarea__inner {
       background-color: transparent;
-      color: #fff;
+      color: @dark-text-main;
     }
   }
 
   .title {
     font-size: 16px;
     font-weight: 500;
-    color: #333;
+    color: @text-main;
     margin: 10px 0;
     flex-shrink: 0;
   }
@@ -167,11 +176,16 @@ export default {
       display: flex;
       overflow: hidden;
       align-items: center;
-      border: 1px solid #dcdfe6;
+      border: 1px solid @border-weak;
       border-bottom: none;
+      transition: background-color @duration-fast @ease-out;
+
+      &:hover {
+        background-color: @fill-hover;
+      }
 
       &:last-of-type {
-        border-bottom: 1px solid #dcdfe6;
+        border-bottom: 1px solid @border-weak;
       }
 
       .overview,
@@ -199,8 +213,8 @@ export default {
         position: absolute;
         right: 0;
         top: 0;
-        border-left: 1px solid #dcdfe6;
-        background-color: #fafafa;
+        border-left: 1px solid @border-weak;
+        background-color: @fill-hover;
       }
     }
   }

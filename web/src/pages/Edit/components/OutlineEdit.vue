@@ -291,6 +291,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .outlineEditContainer {
   position: fixed;
   left: 0;
@@ -302,14 +304,18 @@ export default {
   overflow: hidden;
 
   &.isDark {
-    background-color: #262a2e;
+    background-color: @dark-panel;
 
     .btnList {
       .btn {
         .icon {
-          color: #fff;
+          color: @dark-text-main;
         }
       }
+    }
+
+    .customNode {
+      color: @dark-text-main;
     }
   }
 
@@ -353,7 +359,7 @@ export default {
 
 .customNode {
   width: 100%;
-  color: rgba(0, 0, 0, 0.85);
+  color: @text-main;
   font-weight: bold;
 
   .nodeEdit {

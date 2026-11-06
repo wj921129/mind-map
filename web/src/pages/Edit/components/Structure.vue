@@ -88,6 +88,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .layoutGroupList {
   width: 100%;
   padding: 20px;
@@ -95,7 +97,7 @@ export default {
   &.isDark {
     .laytouGroup {
       .groupName {
-        color: #fff;
+        color: @dark-text-main;
       }
     }
   }
@@ -106,7 +108,7 @@ export default {
 
     .groupName {
       font-weight: 500;
-      color: #303133;
+      color: @text-main;
       margin-bottom: 8px;
       font-size: 14px;
     }
@@ -121,20 +123,19 @@ export default {
         width: 120px;
         height: 70px;
         cursor: pointer;
-        border: 1px solid #e9e9e9;
-        transition: all 0.2s;
+        border: 1px solid @border-weak;
+        transition: all @duration-base @ease-out;
         overflow: hidden;
         margin-bottom: 12px;
         padding: 5px;
-        border-radius: 5px;
+        border-radius: @radius-md;
 
         &:hover {
-          box-shadow: 0 1px 2px -2px rgba(0, 0, 0, 0.16),
-            0 3px 6px 0 rgba(0, 0, 0, 0.12), 0 5px 12px 4px rgba(0, 0, 0, 0.09);
+          box-shadow: @shadow-float;
         }
 
         &.active {
-          border: 1px solid #409eff;
+          border: 1px solid @primary;
         }
 
         img {

@@ -1,0 +1,64 @@
+// ============================================================
+// 设计令牌（Design Tokens）
+// 集中管理颜色 / 圆角 / 阴影 / 动效 / 字号，供各组件按需引入
+// 改主色只需改 @primary 一行
+// ============================================================
+
+// 主色（ElementUI 主题蓝）
+@primary: #409eff;
+@primary-deep: #3a8ee6;
+@primary-light: #ecf5ff;
+@primary-active-bg: rgba(64, 158, 255, 0.14);
+
+// 语义色
+@danger: #f56c6c;
+
+// 中性色 · 浅色
+@text-main: rgba(26, 26, 26, 0.85);
+@text-sub: rgba(26, 26, 26, 0.65);
+@text-weak: rgba(26, 26, 26, 0.45);
+@border-weak: rgba(0, 0, 0, 0.06);
+@fill-subtle: rgba(0, 0, 0, 0.025);
+@fill-hover: rgba(0, 0, 0, 0.04);
+@fill-hover-strong: rgba(0, 0, 0, 0.06);
+@fill-active: rgba(0, 0, 0, 0.07);
+@panel-bg: rgba(255, 255, 255, 0.86);
+
+// 中性色 · 暗色
+@dark-panel: #262a2e;
+@dark-panel-blur: rgba(38, 42, 46, 0.86);
+@dark-border: hsla(0, 0%, 100%, 0.1);
+@dark-text-main: hsla(0, 0%, 100%, 0.9);
+@dark-text-sub: hsla(0, 0%, 100%, 0.6);
+@dark-text-weak: hsla(0, 0%, 100%, 0.4);
+@dark-fill-subtle: hsla(0, 0%, 100%, 0.04);
+@dark-fill-hover: hsla(0, 0%, 100%, 0.06);
+@dark-fill-active: hsla(0, 0%, 100%, 0.12);
+@dark-primary-active-bg: rgba(64, 158, 255, 0.22);
+@dark-disabled-bg: rgba(255, 255, 255, 0.05);
+@dark-disabled-border: hsla(0, 0%, 100%, 0.08);
+@dark-disabled-text: hsla(0, 0%, 100%, 0.28);
+
+// 圆角
+@radius-sm: 6px;
+@radius-md: 8px;
+@radius-lg: 12px;
+
+// 阴影（分层柔和投影）
+@shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.05),
+  0 8px 24px rgba(15, 23, 42, 0.08);
+@shadow-float: 0 2px 4px rgba(15, 23, 42, 0.05),
+  0 12px 32px rgba(15, 23, 42, 0.12);
+
+// 动效（统一缓出曲线，短交互快、面板过渡稳）
+@ease-out: cubic-bezier(0.25, 0.8, 0.35, 1);
+@duration-fast: 0.15s;
+@duration-base: 0.25s;
+
+// 字号
+@font-size-sm: 12px;
+@font-size-base: 13px;
+
+// 布局
+@sidebar-width: 300px;
+@sidebar-gap: 5px;

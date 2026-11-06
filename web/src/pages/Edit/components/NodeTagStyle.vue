@@ -172,18 +172,21 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .nodeTagStyleContainer {
   position: fixed;
   width: 260px;
   padding: 12px;
-  background-color: #fff;
-  border-radius: 5px;
-  box-shadow: 0 2px 16px 0 rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background-color: @panel-bg;
+  backdrop-filter: saturate(180%) blur(16px);
+  border-radius: @radius-lg;
+  box-shadow: @shadow-panel;
+  border: 1px solid @border-weak;
 
   &.isDark {
-    background-color: #262a2e;
-    border-left-color: hsla(0, 0%, 100%, 0.1);
+    background-color: @dark-panel;
+    border-color: @dark-border;
   }
 
   .row {
@@ -199,8 +202,8 @@ export default {
       display: inline-block;
       width: 20px;
       height: 20px;
-      border: 1px solid #dcdfe6;
-      border-radius: 4px;
+      border: 1px solid @border-weak;
+      border-radius: @radius-sm;
       cursor: pointer;
     }
 
@@ -226,12 +229,13 @@ export default {
       align-items: center;
       margin-left: 5px;
       cursor: pointer;
-      color: #9aa5b8;
+      color: @text-weak;
       font-size: 12px;
       user-select: none;
+      transition: color @duration-fast @ease-out;
 
       &:hover {
-        color: #eb5555;
+        color: @danger;
       }
 
       .iconfont {

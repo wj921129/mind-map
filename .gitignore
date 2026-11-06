@@ -4,3 +4,16 @@ dist_electron
 simple-mind-map/dist
 simple-mind-map/types
 utools/dist
+
+# 本地工作目录与工具配置（不入库）
+.work/
+tmp-mm-html/
+.agents/
+.codex/
+.dsh/
+.workbuddy/
+.codegraph/
+
+# 运行时数据（不入库）
+server/data/
+server/mindmap.db

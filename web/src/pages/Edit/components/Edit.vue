@@ -1,6 +1,7 @@
 <template>
   <div
     class="editContainer"
+    :class="{ isDark: isDark }"
     @dragenter.stop.prevent="onDragenter"
     @dragleave.stop.prevent
     @dragover.stop.prevent
@@ -201,6 +202,7 @@ export default {
   computed: {
     ...mapState({
       isZenMode: state => state.localConfig.isZenMode,
+      isDark: state => state.localConfig.isDark,
       openNodeRichText: state => state.localConfig.openNodeRichText,
       isShowScrollbar: state => state.localConfig.isShowScrollbar,
       enableDragImport: state => state.localConfig.enableDragImport,
@@ -629,6 +631,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .editContainer {
   position: fixed;
   left: 0;
@@ -636,13 +640,22 @@ export default {
   top: 0;
   bottom: 0;
 
+  &.isDark {
+    .dragMask {
+      background-color: @dark-panel-blur;
+      color: @dark-text-main;
+    }
+  }
+
   .dragMask {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: @panel-bg;
+    backdrop-filter: saturate(180%) blur(12px);
+    color: @text-main;
     display: flex;
     align-items: center;
     justify-content: center;

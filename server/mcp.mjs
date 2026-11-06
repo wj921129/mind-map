@@ -33,7 +33,7 @@ const TOOLS = [
   {
     name: 'set_mind_map_data',
     description:
-      '设置思维导图数据。参数：data（Markdown 格式字符串，必填）、layout（结构，可选，可选值包括 logicalStructure、mindMap、organizationStructure、catalogOrganization、timeline、verticalTimeline、fishbone、flowchart（树状分叉流程图：多分支自动渲染为菱形判断框，条件直接挂在连接线上，推荐用于业务/代码流程图）、flowchart2（树状分叉流程图2：统一矩形紧凑框）等）、theme（主题，可选）。编写 flowchart 的 Markdown 时请采用父子嵌套树结构：判断步骤作为父节点，其下每个条件写一层，条件下面再挂下游分支步骤；也可以在步骤文字前加【条件】前缀（如「【days == 3】4. 校验提现属性」），渲染时会自动拆成条件框 + 步骤节点。',
+      '设置思维导图数据。参数：data（Markdown 格式字符串，必填）、layout（结构，可选，可选值包括 logicalStructure、mindMap、organizationStructure、catalogOrganization、timeline、verticalTimeline、fishbone、flowchart（树状分叉流程图：多分支自动渲染为菱形判断框，条件直接挂在连接线上，推荐用于业务/代码流程图）、flowchart2（树状分叉流程图2：统一矩形紧凑框）等）、theme（主题，可选）。编写 flowchart 的 Markdown 时必须采用父子嵌套树结构，硬性要求：①判断步骤作为父节点，其下每个条件写一层，条件下面再挂下游分支步骤；②线性调用链（如 入口→Service→Mapper→返回）必须逐层缩进嵌套、每层一步，严禁写成同一层平铺列表——flowchart 布局中平铺即并行分支，顺序调用链写成平铺会被渲染成横向并列；③也可以在步骤文字前加【条件】前缀（如「【days == 3】4. 校验提现属性」），渲染时会自动拆成条件框 + 步骤节点。嵌套列表示例（每层缩进2空格）：\n- 入口：POST /todo/queryMore\n  - PageHelper.startPage 开启分页\n    - Mapper.selectMore(isDeal, mchntCd)\n平铺反例（禁止）：\n- 入口\n- PageHelper\n- Mapper。若返回结果中带 warnings 字段，说明检测到疑似平铺的调用链，请按提示改写 Markdown 后重新调用本工具。',
     inputSchema: {
       type: 'object',
       properties: {

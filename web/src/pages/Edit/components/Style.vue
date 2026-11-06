@@ -178,8 +178,8 @@
                       style.borderDasharray === item.value
                         ? '#409eff'
                         : isDark
-                        ? '#fff'
-                        : '#000'
+                        ? 'rgba(255, 255, 255, 0.85)'
+                        : 'rgba(26, 26, 26, 0.85)'
                     "
                     :stroke-dasharray="item.value"
                   ></line>
@@ -330,8 +330,8 @@
                       style.shape === item.value
                         ? '#409eff'
                         : isDark
-                        ? '#fff'
-                        : '#000'
+                        ? 'rgba(255, 255, 255, 0.85)'
+                        : 'rgba(26, 26, 26, 0.85)'
                     "
                     stroke-width="2"
                   ></path>
@@ -380,8 +380,8 @@
                       style.lineDasharray === item.value
                         ? '#409eff'
                         : isDark
-                        ? '#fff'
-                        : '#000'
+                        ? 'rgba(255, 255, 255, 0.85)'
+                        : 'rgba(26, 26, 26, 0.85)'
                     "
                     :stroke-dasharray="item.value"
                   ></line>
@@ -754,6 +754,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .styleBox {
   width: 100%;
   height: 100%;
@@ -763,20 +765,37 @@ export default {
   &.isDark {
     .sidebarContent {
       .title {
-        color: #fff;
+        color: @dark-text-main;
       }
 
       .row {
         .rowItem {
           .name {
-            color: hsla(0, 0%, 100%, 0.6);
+            color: @dark-text-sub;
+          }
+
+          .block {
+            border-color: @dark-border;
+
+            &.disabled {
+              background-color: @dark-disabled-bg !important;
+              border-color: @dark-disabled-border !important;
+              color: @dark-disabled-text !important;
+            }
           }
         }
 
-        .styleBtn {
-          background-color: #363b3f;
-          color: hsla(0, 0%, 100%, 0.6);
-          border-color: hsla(0, 0%, 100%, 0.1);
+        .styleBtn,
+        .fontStyleBtn {
+          background-color: @dark-panel;
+          color: @dark-text-sub;
+          border-color: @dark-border;
+
+          &.disabled {
+            background-color: @dark-disabled-bg !important;
+            border-color: @dark-disabled-border !important;
+            color: @dark-disabled-text !important;
+          }
         }
       }
     }
@@ -796,7 +815,7 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: #666;
+  color: @text-weak;
 
   .tipIcon {
     font-size: 100px;
@@ -811,7 +830,7 @@ export default {
     font-size: 16px;
     font-family: PingFangSC-Medium, PingFang SC;
     font-weight: 500;
-    color: rgba(26, 26, 26, 0.9);
+    color: @text-main;
     margin-bottom: 10px;
     margin-top: 35px;
 
@@ -848,9 +867,14 @@ export default {
         display: inline-block;
         width: 30px;
         height: 30px;
-        border: 1px solid #dcdfe6;
-        border-radius: 4px;
+        border: 1px solid @border-weak;
+        border-radius: @radius-sm;
         cursor: pointer;
+        transition: border-color @duration-fast @ease-out;
+
+        &:hover {
+          border-color: @primary;
+        }
 
         &.disabled {
           background-color: #f5f7fa !important;
@@ -865,17 +889,24 @@ export default {
       position: relative;
       width: 50px;
       height: 30px;
-      background: #fff;
-      border: 1px solid #eee;
+      background: transparent;
+      border: 1px solid @border-weak;
       display: flex;
       justify-content: center;
       align-items: center;
       font-weight: bold;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: @radius-sm;
+      transition: background-color @duration-fast @ease-out,
+        border-color @duration-fast @ease-out;
+
+      &:hover {
+        background-color: @fill-hover;
+        border-color: @primary;
+      }
 
       &.actived {
-        background-color: #eee;
+        background-color: @fill-active;
       }
 
       &.disabled {
@@ -906,17 +937,25 @@ export default {
 .borderLine {
   display: inline-block;
   width: 100%;
-  background-color: #000;
+  background-color: @text-main;
 
   &.isDark {
-    background-color: #fff;
+    background-color: @dark-text-main;
   }
 }
 </style>
 <style lang="less">
+@import '../../../style/tokens.less';
+
 .el-select-dropdown__item.selected {
   .borderLine {
-    background-color: #409eff;
+    background-color: @primary;
+  }
+}
+
+.borderLine {
+  &.isDark {
+    background-color: @dark-text-main;
   }
 }
 </style>

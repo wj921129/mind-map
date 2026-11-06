@@ -207,6 +207,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .themeGroupList {
   display: flex;
   flex-direction: column;
@@ -215,7 +217,7 @@ export default {
 
   &.isDark {
     .name {
-      color: #fff;
+      color: @dark-text-main;
     }
   }
 
@@ -236,12 +238,12 @@ export default {
     .themeItem {
       width: 100%;
       cursor: pointer;
-      border-bottom: 1px solid #e9e9e9;
+      border-bottom: 1px solid @border-weak;
       margin-bottom: 20px;
       padding-bottom: 20px;
-      transition: all 0.2s;
+      transition: all @duration-base @ease-out;
       border: 3px solid transparent;
-      border-radius: 5px;
+      border-radius: @radius-md;
       overflow: hidden;
 
       &:last-of-type {
@@ -249,12 +251,11 @@ export default {
       }
 
       &:hover {
-        box-shadow: 0 1px 2px -2px rgba(0, 0, 0, 0.16),
-          0 3px 6px 0 rgba(0, 0, 0, 0.12), 0 5px 12px 4px rgba(0, 0, 0, 0.09);
+        box-shadow: @shadow-float;
       }
 
       &.active {
-        border: 3px solid rgb(154, 198, 250);
+        border: 3px solid @primary;
       }
 
       .imgBox {

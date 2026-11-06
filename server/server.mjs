@@ -63,6 +63,39 @@ const MCP_DEFAULT_DATA = {
 }
 
 // ─── 服务端 Markdown 解析器 ───
+
+// 线性调用链步骤的文本特征：入口/服务调用/Mapper/分页/返回
+const CHAIN_STEP_PAT = /(入口[:：]|Service\.|Mapper\.|PageHelper|\.select|\.query|\.insert|\.update|返回|构建分页响应)/
+// richText 的 data.text 可能是 HTML，剥标签后用于模式匹配与告警展示
+const stripHtml = text => String(text || '').replace(/<[^>]*>/g, '')
+
+// 结构体检：检测疑似被写成平铺列表的线性调用链。
+// flowchart 布局中 children 是并行分支，顺序执行的调用链必须是逐层嵌套的父子关系；
+// 若组节点下多个平铺叶节点命中调用链特征，则告警（不自动改写，判断权交给 AI/人）
+function detectFlatChain (root) {
+  const warnings = []
+  const walk = node => {
+    const kids = node.children || []
+    if (kids.length >= 3) {
+      const flatChainSteps = kids.filter(
+        k => (k.children || []).length === 0 && CHAIN_STEP_PAT.test(stripHtml(k.data && k.data.text))
+      )
+      if (flatChainSteps.length >= 3) {
+        const parentText = stripHtml(node.data && node.data.text).slice(0, 20)
+        const stepsText = flatChainSteps.map(k => stripHtml(k.data.text).slice(0, 14)).join(' → ')
+        warnings.push(
+          `节点「${parentText}」下有 ${flatChainSteps.length} 个平铺步骤（${stepsText}），` +
+          '疑似线性调用链被写成了平铺列表；flowchart 布局中平铺即并行分支，' +
+          '顺序执行的调用链请改为逐层缩进嵌套（每层一步）后重新生成'
+        )
+      }
+    }
+    kids.forEach(walk)
+  }
+  walk(root)
+  return warnings
+}
+
 function parseMarkdownToRoot (md) {
   if (!md || !md.trim()) return null
   const lines = md.split(/\r?\n/)
@@ -749,7 +782,16 @@ async function handleMcpCommand (req, res) {
       }
 
       case 'set_mind_map_data': {
+        // 回退命中（WS 客户端打开的图）时显式提示，避免静默写错图
+        const targetWarnings = []
         let targetMapId = resolveTargetMapId()
+        if (targetMapId && targetMapId !== activeMcpMapId) {
+          const fallbackMap = getMap(targetMapId)
+          targetWarnings.push(
+            `未指定目标导图，已回退到当前浏览器打开的图「${(fallbackMap && fallbackMap.title) || targetMapId}」(${targetMapId})；` +
+            '如需新建导图请先调用 start_editor'
+          )
+        }
         if (!targetMapId) {
           const id = generateId()
           createMap({ id, title: '未命名导图', data: MCP_DEFAULT_DATA, updatedBy: 'mcp' })
@@ -762,6 +804,10 @@ async function handleMcpCommand (req, res) {
 
         const root = parseMarkdownToRoot(args.data)
         if (!root) { send400(res, 'Markdown 解析结果为空'); return }
+
+        // 结构体检：疑似平铺的线性调用链时回传 warning（AI 可据此改写 Markdown 重新生成）
+        const structureWarnings = detectFlatChain(root)
+        const allWarnings = [...targetWarnings, ...structureWarnings]
 
         // 标题自动提取
         let newTitle = existing.title
@@ -800,7 +846,13 @@ async function handleMcpCommand (req, res) {
           savedByServer: true
         })
 
-        sendJson(res, 200, { success: true, mapId: targetMapId, revision: updated.revision, title: newTitle })
+        sendJson(res, 200, {
+          success: true,
+          mapId: targetMapId,
+          revision: updated.revision,
+          title: newTitle,
+          warnings: allWarnings
+        })
         return
       }
 

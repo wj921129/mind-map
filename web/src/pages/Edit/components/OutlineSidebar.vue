@@ -93,6 +93,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .btnList {
   position: absolute;
   right: 50px;
@@ -103,9 +105,19 @@ export default {
   .btn {
     cursor: pointer;
     margin-left: 12px;
+    color: @text-sub;
+    transition: color @duration-fast @ease-out;
+
+    &:hover {
+      color: @primary;
+    }
 
     &.isDark {
-      color: #fff;
+      color: @dark-text-sub;
+
+      &:hover {
+        color: @primary;
+      }
     }
   }
 }

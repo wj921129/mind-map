@@ -111,39 +111,93 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .scaleContainer {
   display: flex;
   align-items: center;
 
   &.isDark {
     .btn {
-      color: hsla(0, 0%, 100%, 0.6);
+      color: @dark-text-sub;
+
+      &:hover {
+        background-color: @dark-fill-hover;
+        color: @dark-text-main;
+      }
     }
 
     .scaleInfo {
-      color: hsla(0, 0%, 100%, 0.6);
+      color: @dark-text-sub;
 
       input {
-        color: hsla(0, 0%, 100%, 0.6);
+        color: @dark-text-sub;
+      }
+
+      &:hover,
+      &:focus-within {
+        background-color: @dark-fill-hover;
+        color: @dark-text-main;
+
+        input {
+          color: @dark-text-main;
+        }
       }
     }
   }
 
   .btn {
     cursor: pointer;
+    font-size: 14px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: @radius-sm;
+    color: @text-sub;
+    transition: background-color @duration-fast @ease-out,
+      color @duration-fast @ease-out;
+
+    &:hover {
+      background-color: @fill-hover;
+      color: @text-main;
+    }
   }
 
   .scaleInfo {
-    margin: 0 20px;
+    margin: 0 4px;
+    height: 24px;
+    padding: 0 4px;
     display: flex;
     align-items: center;
+    justify-content: center;
+    border-radius: @radius-sm;
+    color: @text-sub;
+    font-size: @font-size-sm;
+    cursor: text;
+    transition: background-color @duration-fast @ease-out,
+      color @duration-fast @ease-out;
+
+    &:hover,
+    &:focus-within {
+      background-color: @fill-hover;
+      color: @text-main;
+
+      input {
+        color: @text-main;
+      }
+    }
 
     input {
-      width: 35px;
-      text-align: center;
+      width: 28px;
+      text-align: right;
       background-color: transparent;
       border: none;
       outline: none;
+      font-size: @font-size-sm;
+      color: @text-sub;
+      padding-right: 1px;
     }
   }
 }

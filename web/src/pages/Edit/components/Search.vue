@@ -1,7 +1,7 @@
 <template>
   <div class="searchContainer" :class="{ isDark: isDark, show: show }">
-    <div class="closeBtnBox">
-      <span class="closeBtn el-icon-close" @click="close"></span>
+    <div class="closeBtnBox" @click="close">
+      <span class="closeBtn el-icon-close"></span>
     </div>
     <div class="searchInputBox">
       <el-input
@@ -244,24 +244,70 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .searchContainer {
-  position: relative;
-  background-color: #fff;
-  padding: 16px;
-  width: 296px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
   position: fixed;
+  background-color: @panel-bg;
+  backdrop-filter: saturate(180%) blur(16px);
+  padding: 38px 16px 16px;
+  width: 296px;
+  border-radius: @radius-lg;
+  border: 1px solid @border-weak;
+  box-shadow: @shadow-float;
+  box-sizing: border-box;
   top: 110px;
   right: -296px;
-  transition: all 0.3s;
+  transition: right @duration-base @ease-out;
 
   &.isDark {
-    background-color: #363b3f;
+    background-color: @dark-panel-blur;
+    border-color: @dark-border;
 
     .closeBtnBox {
-      color: #fff;
-      background-color: #363b3f;
+      color: @dark-text-sub;
+      background: transparent;
+
+      &:hover {
+        background-color: @dark-fill-hover;
+        color: @dark-text-main;
+      }
+    }
+
+    .searchInfo {
+      color: @dark-text-weak;
+    }
+
+    .searchResultList {
+      background-color: @dark-panel-blur;
+      border-color: @dark-border;
+
+      .searchResultItem {
+        color: @dark-text-main;
+        border-bottom-color: @dark-border;
+
+        &::before {
+          background-color: @dark-text-sub;
+        }
+
+        &:hover {
+          background-color: @dark-fill-hover;
+        }
+
+        .name {
+          color: @dark-text-sub;
+        }
+      }
+
+      .empty {
+        .iconfont {
+          color: @dark-text-sub;
+        }
+
+        .text {
+          color: @dark-text-sub;
+        }
+      }
     }
   }
 
@@ -276,17 +322,25 @@ export default {
 
   .closeBtnBox {
     position: absolute;
-    right: -5px;
-    top: -5px;
-    width: 20px;
-    height: 20px;
-    background-color: #fff;
-    border-radius: 50%;
+    right: 8px;
+    top: 8px;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border-radius: @radius-sm;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: none;
+    color: @text-sub;
+    transition: background-color @duration-fast @ease-out,
+      color @duration-fast @ease-out;
+
+    &:hover {
+      background-color: @fill-hover;
+      color: @text-main;
+    }
 
     .closeBtn {
       font-size: 16px;
@@ -301,7 +355,7 @@ export default {
       right: 70px;
       top: 50%;
       transform: translateY(-50%);
-      color: #909090;
+      color: @text-weak;
       font-size: 14px;
     }
   }
@@ -311,9 +365,12 @@ export default {
     left: 0;
     top: 100%;
     width: 100%;
-    background-color: #fff;
-    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
+    background-color: @panel-bg;
+    backdrop-filter: saturate(180%) blur(16px);
+    box-shadow: @shadow-float;
+    border-radius: @radius-lg;
+    border: 1px solid @border-weak;
+    box-sizing: border-box;
     margin-top: 5px;
     overflow-y: auto;
     padding: 12px 0;
@@ -329,6 +386,15 @@ export default {
       cursor: pointer;
       position: relative;
       padding-left: 22px;
+      color: @text-main;
+      border-bottom: 1px solid @border-weak;
+      box-sizing: border-box;
+      transition: background-color @duration-fast @ease-out,
+        color @duration-fast @ease-out;
+
+      &:last-child {
+        border-bottom: none;
+      }
 
       &::before {
         content: '';
@@ -338,16 +404,16 @@ export default {
         transform: translateY(-50%);
         width: 5px;
         height: 5px;
-        background-color: #606266;
+        background-color: @text-sub;
         border-radius: 50%;
       }
 
       &:hover {
-        background-color: #f2f4f7;
+        background-color: @fill-hover;
       }
 
       /deep/.match {
-        color: #409eff;
+        color: @primary;
         font-weight: bold;
       }
     }
@@ -363,11 +429,12 @@ export default {
       .iconfont {
         font-size: 50px;
         margin-bottom: 20px;
+        color: @text-weak;
       }
 
       .text {
         font-size: 14px;
-        color: rgba(26, 26, 26, 0.8);
+        color: @text-main;
       }
     }
   }
