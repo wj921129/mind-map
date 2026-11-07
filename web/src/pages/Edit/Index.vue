@@ -72,6 +72,8 @@ export default {
 </script>
 
 <style lang="less">
+@import '../../style/tokens.less';
+
 .container {
 }
 
@@ -79,129 +81,129 @@ body {
   &.isDark {
     /* el-button */
     .el-button {
-      background-color: #363b3f;
-      color: hsla(0, 0%, 100%, 0.9);
-      border-color: hsla(0, 0%, 100%, 0.1);
+      background-color: @dark-panel;
+      color: @dark-text-main;
+      border-color: @dark-border;
     }
 
     /* el-input */
     .el-input__inner {
-      background-color: #363b3f;
-      border-color: hsla(0, 0%, 100%, 0.1);
-      color: hsla(0, 0%, 100%, 0.9);
+      background-color: @dark-panel;
+      border-color: @dark-border;
+      color: @dark-text-main;
     }
 
     .el-input.is-disabled .el-input__inner {
-      background-color: #363b3f;
-      border-color: hsla(0, 0%, 100%, 0.1);
-      color: hsla(0, 0%, 100%, 0.3);
+      background-color: @dark-panel;
+      border-color: @dark-border;
+      color: @dark-text-weak;
     }
 
     .el-input-group__append,
     .el-input-group__prepend {
-      background-color: #363b3f;
-      border-color: hsla(0, 0%, 100%, 0.1);
+      background-color: @dark-panel;
+      border-color: @dark-border;
     }
 
     .el-input-group__append button.el-button {
-      color: hsla(0, 0%, 100%, 0.9);
+      color: @dark-text-main;
     }
 
     /* el-select */
     .el-select-dropdown {
-      background-color: #36393d;
-      border-color: hsla(0, 0%, 100%, 0.1);
+      background-color: @dark-panel;
+      border-color: @dark-border;
 
       .el-select-dropdown__item {
-        color: hsla(0, 0%, 100%, 0.6);
+        color: @dark-text-sub;
       }
 
       .el-select-dropdown__item.selected {
-        color: #409eff;
+        color: @primary;
       }
 
       .el-select-dropdown__item.hover,
       .el-select-dropdown__item:hover {
-        background-color: hsla(0, 0%, 100%, 0.05);
+        background-color: @dark-fill-hover;
       }
     }
 
     .el-select .el-input.is-disabled .el-input__inner:hover {
-      border-color: hsla(0, 0%, 100%, 0.1);
+      border-color: @dark-border;
     }
 
     /* el-popper*/
     .el-popper {
-      background-color: #36393d;
-      border-color: hsla(0, 0%, 100%, 0.1);
+      background-color: @dark-panel;
+      border-color: @dark-border;
     }
 
     .el-popper[x-placement^='bottom'] .popper__arrow {
-      background-color: #36393d;
+      background-color: @dark-panel;
     }
 
     .el-popper[x-placement^='bottom'] .popper__arrow::after {
-      border-bottom-color: #36393d;
+      border-bottom-color: @dark-panel;
     }
 
     .el-popper[x-placement^='top'] .popper__arrow {
-      background-color: #36393d;
+      background-color: @dark-panel;
     }
 
     .el-popper[x-placement^='top'] .popper__arrow::after {
-      border-top-color: #36393d;
+      border-top-color: @dark-panel;
     }
 
     /* el-tabs */
     .el-tabs__item {
-      color: hsla(0, 0%, 100%, 0.6);
+      color: @dark-text-sub;
 
       &:hover,
       &.is-active {
-        color: #409eff;
+        color: @primary;
       }
     }
 
     .el-tabs__nav-wrap::after {
-      background-color: hsla(0, 0%, 100%, 0.6);
+      background-color: @dark-text-sub;
     }
 
     /* el-slider */
     .el-slider__runway {
-      background-color: hsla(0, 0%, 100%, 0.6);
+      background-color: @dark-text-sub;
     }
 
     /* el-radio-group */
     .el-radio-group {
       .el-radio-button__inner {
-        background-color: #36393d;
-        color: hsla(0, 0%, 100%, 0.6);
+        background-color: @dark-panel;
+        color: @dark-text-sub;
       }
 
       .el-radio-button__orig-radio:checked + .el-radio-button__inner {
         color: #fff;
-        background-color: #409eff;
+        background-color: @primary;
       }
     }
 
     /* el-dialog */
     .el-dialog {
-      background-color: #262a2e;
+      background-color: @dark-panel;
 
       .el-dialog__header {
-        border-bottom: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-bottom: 1px solid @dark-border;
       }
 
       .el-dialog__title {
-        color: hsla(0, 0%, 100%, 0.9);
+        color: @dark-text-main;
       }
 
       .el-dialog__body {
-        background-color: #262a2e;
+        background-color: @dark-panel;
       }
 
       .el-dialog__footer {
-        border-top: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-top: 1px solid @dark-border;
       }
     }
 

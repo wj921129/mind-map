@@ -412,7 +412,9 @@ class Drag extends Base {
       FISHBONE,
       FISHBONE2,
       RIGHT_FISHBONE,
-      RIGHT_FISHBONE2
+      RIGHT_FISHBONE2,
+      FLOWCHART,
+      FLOWCHART2
     } = CONSTANTS.LAYOUT
     this.overlapNode = null
     this.prevNode = null
@@ -458,6 +460,10 @@ class Drag extends Base {
         case RIGHT_FISHBONE2:
           this.handleFishbone(node)
           break
+        case FLOWCHART:
+        case FLOWCHART2:
+          this.handleFlowchart(node)
+          break
         default:
           this.handleLogicalStructure(node)
       }
@@ -484,7 +490,9 @@ class Drag extends Base {
       FISHBONE,
       FISHBONE2,
       RIGHT_FISHBONE,
-      RIGHT_FISHBONE2
+      RIGHT_FISHBONE2,
+      FLOWCHART,
+      FLOWCHART2
     } = CONSTANTS.LAYOUT
     const { LEFT, TOP, RIGHT, BOTTOM } = CONSTANTS.LAYOUT_GROW_DIR
     const layerIndex = this.overlapNode.layerIndex
@@ -616,6 +624,24 @@ class Drag extends Base {
                   halfPlaceholderHeight
           }
           break
+        case FLOWCHART:
+        case FLOWCHART2:
+          if (layerIndex === 0) {
+            x =
+              lastNodeRect.originLeft +
+              lastNodeRect.originWidth / 2 -
+              halfPlaceholderWidth
+            y =
+              lastNodeRect.originBottom + this.minOffset - halfPlaceholderHeight
+          } else {
+            x =
+              dir === LEFT
+                ? lastNodeRect.originRight - this.placeholderWidth
+                : lastNodeRect.originLeft
+            y =
+              lastNodeRect.originBottom + this.minOffset - halfPlaceholderHeight
+          }
+          break
         default:
       }
     } else {
@@ -707,6 +733,20 @@ class Drag extends Base {
                 : nodeRect.originBottom + this.minOffset - halfPlaceholderHeight
           }
           break
+        case FLOWCHART:
+        case FLOWCHART2:
+          if (layerIndex === 0) {
+            rotate = true
+          }
+          x =
+            dir === RIGHT
+              ? nodeRect.originRight + marginX
+              : nodeRect.originLeft - this.placeholderWidth - marginX
+          y =
+            nodeRect.originTop +
+            nodeRect.originHeight / 2 -
+            halfPlaceholderHeight
+          break
         default:
       }
     }
@@ -733,13 +773,17 @@ class Drag extends Base {
       FISHBONE,
       FISHBONE2,
       RIGHT_FISHBONE,
-      RIGHT_FISHBONE2
+      RIGHT_FISHBONE2,
+      FLOWCHART,
+      FLOWCHART2
     } = CONSTANTS.LAYOUT
     switch (this.mindMap.opt.layout) {
       case LOGICAL_STRUCTURE:
         return CONSTANTS.LAYOUT_GROW_DIR.RIGHT
       case LOGICAL_STRUCTURE_LEFT:
         return CONSTANTS.LAYOUT_GROW_DIR.LEFT
+      case FLOWCHART:
+        return CONSTANTS.LAYOUT_GROW_DIR.RIGHT
       case MIND_MAP:
       case TIMELINE2:
       case VERTICAL_TIMELINE:
@@ -749,6 +793,7 @@ class Drag extends Base {
       case FISHBONE2:
       case RIGHT_FISHBONE:
       case RIGHT_FISHBONE2:
+      case FLOWCHART2:
         return node.dir
       default:
         return ''
@@ -1223,6 +1268,13 @@ class Drag extends Base {
         this.handleVerticalCheck(node, checkList)
       }
     }
+  }
+
+  // 处理流程图
+  handleFlowchart(node) {
+    // 流程图改为自上而下树状分叉后，同级节点水平排列，拖拽检测与组织结构图保持一致
+    const checkList = this.commonGetNodeCheckList(node)
+    this.handleHorizontalCheck(node, checkList)
   }
 
   // 获取节点的兄弟节点列表通用方法

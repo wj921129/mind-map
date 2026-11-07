@@ -1,5 +1,8 @@
 <template>
-  <div class="navigatorContainer customScrollbar" :class="{ isDark: isDark }">
+  <div
+    class="navigatorContainer customScrollbar"
+    :class="{ isDark: isDark, hasSidebar: !!activeSidebar }"
+  >
     <div class="item">
       <el-select
         v-model="lang"
@@ -162,7 +165,8 @@ export default {
   computed: {
     ...mapState({
       isReadonly: state => state.isReadonly,
-      isDark: state => state.localConfig.isDark
+      isDark: state => state.localConfig.isDark,
+      activeSidebar: state => state.activeSidebar
     })
   },
   created() {
@@ -252,29 +256,41 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .navigatorContainer {
   padding: 0 12px;
   position: fixed;
   right: 20px;
   bottom: 20px;
-  background: hsla(0, 0%, 100%, 0.8);
-  border-radius: 5px;
-  opacity: 0.8;
+  background: @panel-bg;
+  backdrop-filter: saturate(180%) blur(16px);
+  border-radius: @radius-lg;
+  box-shadow: @shadow-panel;
+  border: 1px solid @border-weak;
   height: 44px;
-  font-size: 12px;
+  font-size: @font-size-sm;
   display: flex;
   align-items: center;
+  z-index: 100;
+  transition: transform @duration-base @ease-out;
 
   &.isDark {
-    background: #262a2e;
+    background: @dark-panel-blur;
+    border-color: @dark-border;
 
     .item {
       a {
-        color: hsla(0, 0%, 100%, 0.6);
+        color: @dark-text-sub;
       }
 
       .btn {
-        color: hsla(0, 0%, 100%, 0.6);
+        color: @dark-text-sub;
+
+        &:hover {
+          background-color: @dark-fill-hover;
+          color: @dark-text-main;
+        }
       }
     }
   }
@@ -287,13 +303,37 @@ export default {
     }
 
     a {
-      color: #303133;
+      color: @text-main;
       text-decoration: none;
     }
 
     .btn {
       cursor: pointer;
       font-size: 18px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: @radius-sm;
+      color: @text-sub;
+      transition: background-color @duration-fast @ease-out,
+        color @duration-fast @ease-out;
+
+      &:hover {
+        background-color: @fill-hover;
+        color: @text-main;
+      }
+    }
+  }
+}
+
+// 侧边栏打开时向左避让，避免被遮挡
+// 仅在宽屏生效：导航条较长，窄屏空间不足时依靠 z-index 浮于侧边栏之上
+@media screen and (min-width: 1000px) {
+  .navigatorContainer {
+    &.hasSidebar {
+      transform: translateX(-@sidebar-width - @sidebar-gap);
     }
   }
 }

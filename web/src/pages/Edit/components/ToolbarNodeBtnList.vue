@@ -317,13 +317,15 @@ export default {
 }
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .toolbarNodeBtnList {
   display: flex;
 
   &.isDark {
     .toolbarBtn {
-      color: hsla(0, 0%, 100%, 0.9);
+      color: @dark-text-sub;
 
       .icon {
         background: transparent;
@@ -332,14 +334,33 @@ export default {
 
       &:hover {
         &:not(.disabled) {
+          color: @dark-text-main;
+
           .icon {
-            background: hsla(0, 0%, 100%, 0.05);
+            background: @dark-fill-hover;
           }
         }
       }
 
+      &:active {
+        &:not(.disabled) {
+          .icon {
+            background: @dark-fill-active;
+          }
+        }
+      }
+
+      &.active {
+        color: @primary;
+
+        .icon {
+          background: @dark-primary-active-bg;
+          color: @primary;
+        }
+      }
+
       &.disabled {
-        color: #54595f;
+        color: @dark-text-weak;
       }
     }
   }
@@ -349,7 +370,9 @@ export default {
     justify-content: center;
     flex-direction: column;
     cursor: pointer;
-    margin-right: 20px;
+    margin-right: 16px;
+    color: @text-sub;
+    transition: color @duration-fast @ease-out;
 
     &:last-of-type {
       margin-right: 0;
@@ -357,20 +380,33 @@ export default {
 
     &:hover {
       &:not(.disabled) {
+        color: @text-main;
+
         .icon {
-          background: #f5f5f5;
+          background: @fill-hover-strong;
+        }
+      }
+    }
+
+    &:active {
+      &:not(.disabled) {
+        .icon {
+          background: @fill-active;
         }
       }
     }
 
     &.active {
+      color: @primary;
+
       .icon {
-        background: #f5f5f5;
+        background: @primary-active-bg;
+        color: @primary;
       }
     }
 
     &.disabled {
-      color: #bcbcbc;
+      color: @text-weak;
       cursor: not-allowed;
       pointer-events: none;
     }
@@ -378,13 +414,15 @@ export default {
     .icon {
       display: flex;
       height: 26px;
-      background: #fff;
-      border-radius: 4px;
-      border: 1px solid #e9e9e9;
+      background: @fill-subtle;
+      border-radius: @radius-md;
+      border: 1px solid transparent;
       justify-content: center;
       flex-direction: column;
       text-align: center;
       padding: 0 5px;
+      transition: background-color @duration-fast @ease-out,
+        color @duration-fast @ease-out;
     }
 
     .text {

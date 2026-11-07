@@ -109,6 +109,16 @@ function renderExpandBtn() {
   if (this.getChildrenLength() <= 0 || this.isRoot) {
     return
   }
+  // 布局可以要求指定节点不渲染展开收起按钮，
+  // 如流程图中挂在父子连线上的条件标签节点
+  const layout = this.renderer && this.renderer.layout
+  if (
+    layout &&
+    typeof layout.nodeIsRemoveExpandBtn === 'function' &&
+    layout.nodeIsRemoveExpandBtn(this)
+  ) {
+    return
+  }
   if (this._expandBtn) {
     this.group.add(this._expandBtn)
   } else {

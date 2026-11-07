@@ -93,25 +93,38 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .sidebarTriggerContainer {
   position: fixed;
   top: 110px;
   bottom: 80px;
   right: -60px;
-  transition: all 0.3s;
+  transition: all @duration-base @ease-out;
   display: flex;
   flex-direction: column;
   justify-content: center;
 
   &.isDark {
+    .toggleShowBtn {
+      background: @primary-deep;
+      border: 1px solid @dark-border;
+      border-right: none;
+
+      &:hover {
+        box-shadow: -2px 0 12px rgba(58, 142, 230, 0.3);
+      }
+    }
     .trigger {
-      background-color: #262a2e;
+      background-color: @dark-panel-blur;
+      backdrop-filter: saturate(180%) blur(16px);
+      border-color: @dark-border;
 
       .triggerItem {
-        color: hsla(0, 0%, 100%, 0.6);
+        color: @dark-text-sub;
 
         &:hover {
-          background-color: hsla(0, 0%, 100%, 0.05);
+          background-color: @dark-fill-hover;
         }
       }
     }
@@ -122,7 +135,7 @@ export default {
   }
 
   &.hasActive {
-    right: 305px;
+    right: @sidebar-width + @sidebar-gap;
   }
 
   .toggleShowBtn {
@@ -130,14 +143,19 @@ export default {
     left: -6px;
     width: 35px;
     height: 60px;
-    background: #409eff;
+    background: @primary;
     top: 50%;
     transform: translateY(-50%);
     cursor: pointer;
-    transition: left 0.1s linear;
+    transition: left @duration-fast @ease-out,
+      box-shadow @duration-fast @ease-out,
+      background-color @duration-fast @ease-out,
+      border-color @duration-fast @ease-out;
+    border: 1px solid transparent;
+    border-right: none;
     z-index: 0;
-    border-top-left-radius: 10px;
-    border-bottom-left-radius: 10px;
+    border-top-left-radius: @radius-lg;
+    border-bottom-left-radius: @radius-lg;
     display: flex;
     align-items: center;
     padding-left: 4px;
@@ -152,21 +170,23 @@ export default {
 
     &:hover {
       left: -18px;
+      box-shadow: -2px 0 12px rgba(64, 158, 255, 0.35);
     }
 
     span {
       color: #fff;
-      transition: all 0.1s;
+      transition: transform @duration-fast @ease-out;
     }
   }
 
   .trigger {
     position: relative;
     width: 60px;
-    border-color: #eee;
-    background-color: #fff;
-    box-shadow: 0 2px 16px 0 rgba(0, 0, 0, 0.06);
-    border-radius: 6px;
+    border: 1px solid @border-weak;
+    background-color: @panel-bg;
+    backdrop-filter: saturate(180%) blur(16px);
+    box-shadow: @shadow-panel;
+    border-radius: @radius-lg;
     max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
@@ -178,16 +198,18 @@ export default {
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      color: #464646;
+      color: @text-sub;
       user-select: none;
       white-space: nowrap;
+      transition: background-color @duration-fast @ease-out,
+        color @duration-fast @ease-out;
 
       &:hover {
-        background-color: #ededed;
+        background-color: @fill-hover;
       }
 
       &.active {
-        color: #409eff;
+        color: @primary;
         font-weight: bold;
       }
 
@@ -197,7 +219,7 @@ export default {
       }
 
       .triggerName {
-        font-size: 13px;
+        font-size: @font-size-base;
       }
     }
   }

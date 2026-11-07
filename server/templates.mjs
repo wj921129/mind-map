@@ -1,0 +1,783 @@
+import { readFileSync, existsSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const ROOT_DIR = join(__dirname, '..')
+const INDEX_HTML_PATH = join(ROOT_DIR, 'index.html')
+
+// 缓存解析结果
+let cachedAssets = null
+
+// 从根目录 index.html 解析静态资源文件名（带 hash 的 chunk）
+function parseAssets () {
+  if (cachedAssets) return cachedAssets
+  if (!existsSync(INDEX_HTML_PATH)) {
+    throw new Error('根目录 index.html 不存在，请先构建 web 应用')
+  }
+  const html = readFileSync(INDEX_HTML_PATH, 'utf8')
+  const cssLinks = []
+  const jsScripts = []
+  // 匹配 <link href="dist/css/...">
+  const linkRegex = /<link[^>]+href="(dist\/css\/[^"]+)"/g
+  let m
+  while ((m = linkRegex.exec(html)) !== null) {
+    cssLinks.push(m[1])
+  }
+  // 匹配 <script src="dist/js/...">
+  const scriptRegex = /<script[^>]+src="(dist\/js\/[^"]+)"/g
+  while ((m = scriptRegex.exec(html)) !== null) {
+    jsScripts.push(m[1])
+  }
+  cachedAssets = { cssLinks, jsScripts }
+  return cachedAssets
+}
+
+// 构建宿主 HTML 头部（CSS 链接）
+function buildCssLinks () {
+  const { cssLinks } = parseAssets()
+  return cssLinks
+    .map(href => `<link href="/${href}" rel="stylesheet">`)
+    .join('\n    ')
+}
+
+// 构建宿主 HTML 尾部脚本（JS）
+function buildJsScripts () {
+  const { jsScripts } = parseAssets()
+  return jsScripts
+    .map(src => `<script src="/${src}"></script>`)
+    .join('\n    ')
+}
+
+// 生成编辑页宿主 HTML
+export function buildEditHostHtml ({ mapId, title }) {
+  const cssLinks = buildCssLinks()
+  const jsScripts = buildJsScripts()
+  return `<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1,minimum-scale=1">
+  <link rel="icon" href="/dist/logo.ico">
+  <title>${escapeHtml(title || '思绪思维导图')}</title>
+  <script>
+    window.externalPublicPath = '/dist/'
+    window.takeOverApp = true
+    window.__MAP_ID__ = '${escapeJs(mapId)}'
+    var wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://'
+    window.__MCP_WS_URL__ = wsProto + location.host + '/ws/mcp?mapId=' + encodeURIComponent('${escapeJs(mapId)}')
+  </script>
+  ${cssLinks}
+  <style>
+    .mm-capsule {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid #e4e7ed;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      z-index: 9999;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .mm-capsule a { color: #409eff; text-decoration: none; }
+    .mm-capsule .mm-title { cursor: pointer; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mm-capsule .mm-title:hover { color: #409eff; }
+    .mm-capsule .mm-status { font-size: 12px; color: #909399; }
+    .mm-capsule .mm-status.saving { color: #e6a23c; }
+    .mm-capsule .mm-status.conflict { color: #f56c6c; }
+    .mm-capsule button {
+      border: 1px solid #dcdfe6;
+      background: #fff;
+      border-radius: 14px;
+      padding: 3px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #606266;
+    }
+    .mm-capsule button:hover { color: #409eff; border-color: #409eff; }
+    .mm-capsule button.save-btn { background: #409eff; color: #fff; border-color: #409eff; }
+    .mm-capsule button.save-btn:hover { background: #66b1ff; }
+    .mm-dialog-mask {
+      position: fixed; top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.4); z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mm-dialog {
+      background: #fff; border-radius: 8px; padding: 20px; min-width: 360px; max-width: 600px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .mm-dialog h3 { margin: 0 0 12px; font-size: 16px; }
+    .mm-dialog .mm-dialog-body { font-size: 14px; color: #606266; line-height: 1.6; }
+    .mm-dialog .mm-dialog-footer { margin-top: 16px; text-align: right; }
+    .mm-dialog button {
+      border: 1px solid #dcdfe6; background: #fff; border-radius: 4px;
+      padding: 6px 14px; font-size: 13px; cursor: pointer; margin-left: 8px;
+    }
+    .mm-dialog button.primary { background: #409eff; color: #fff; border-color: #409eff; }
+    .mm-dialog button.danger { background: #f56c6c; color: #fff; border-color: #f56c6c; }
+    .mm-share-link {
+      display: flex; align-items: center; gap: 8px; margin: 8px 0;
+    }
+    .mm-share-link input {
+      flex: 1; padding: 6px 10px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px;
+    }
+    .mm-version-list { max-height: 300px; overflow-y: auto; margin: 8px 0; }
+    .mm-version-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 13px;
+    }
+    .mm-version-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <noscript>请启用 JavaScript 以继续使用思绪思维导图。</noscript>
+  <div id="app"></div>
+  <div class="mm-capsule" id="mmCapsule" style="display:none;">
+    <a href="/">← 列表</a>
+    <span class="mm-title" id="mmTitle" title="点击重命名"></span>
+    <span class="mm-status" id="mmStatus">已保存</span>
+    <button id="mmSaveBtn" class="save-btn" title="立即保存 (Ctrl+S)">保存</button>
+    <button id="mmShareBtn">分享</button>
+    <button id="mmHistoryBtn">历史版本</button>
+  </div>
+  ${jsScripts}
+  <script>
+  (function() {
+    var MAP_ID = window.__MAP_ID__
+    var currentRevision = 1
+    var pendingData = null
+    var saveTimer = null
+    var manualSavePending = false
+    var mapData = null
+    var mapTitle = ''
+    var mindMapInstance = null
+    var mcpSavePending = false
+    var isSaving = false
+    var queuedSaveOptions = null
+    var AUTO_SAVE_INTERVAL_MS = 5000
+    var autoSaveTimer = null
+    var lastSavedSignature = null
+    var suppressNextAutoSave = false
+
+    // ── Web Worker 保活：防止后台标签页 WebSocket 被浏览器节流断开 ──
+    try {
+      var workerBlob = new Blob(["setInterval(function(){postMessage('ping')},15000)"], { type: 'application/javascript' })
+      var keepAliveWorker = new Worker(URL.createObjectURL(workerBlob))
+      keepAliveWorker.onmessage = function() {
+        if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+          try { mcpWs.send(JSON.stringify({ type: 'keepalive' })) } catch(e) {}
+        }
+      }
+    } catch(e) {}
+    // 标签页切到后台时立即发一次心跳，防止切换瞬间连接断开
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden && mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+        try { mcpWs.send(JSON.stringify({ type: 'keepalive' })) } catch(e) {}
+      }
+    })
+
+    var statusEl = document.getElementById('mmStatus')
+    var titleEl = document.getElementById('mmTitle')
+    var capsuleEl = document.getElementById('mmCapsule')
+
+    function setStatus(text, cls) {
+      statusEl.textContent = text
+      statusEl.className = 'mm-status' + (cls ? ' ' + cls : '')
+    }
+
+    async function fetchMap() {
+      var res = await fetch('/api/maps/' + MAP_ID)
+      if (!res.ok) {
+        alert('加载导图失败：' + res.status)
+        return
+      }
+      var json = await res.json()
+      mapData = json.data
+      mapTitle = json.title
+      currentRevision = json.revision
+      titleEl.textContent = mapTitle
+      titleEl.title = mapTitle
+      capsuleEl.style.display = 'flex'
+    }
+
+    function debouncedSave(data) {
+      pendingData = data
+      // 服务端已落库的推送触发的保存：消费标记，更新签名，跳过重复 PUT
+      if (suppressNextAutoSave) {
+        suppressNextAutoSave = false
+        lastSavedSignature = JSON.stringify(data)
+        setStatus('已保存 (MCP)', '')
+        return
+      }
+      if (mcpSavePending) {
+        mcpSavePending = false
+        flushSave({ manualSnapshot: false, updatedBy: 'mcp' })
+      } else if (manualSavePending) {
+        manualSavePending = false
+        flushSave({ manualSnapshot: true, updatedBy: 'human' })
+      } else {
+        clearTimeout(saveTimer)
+        saveTimer = setTimeout(function() {
+          flushSave({ manualSnapshot: false, updatedBy: 'human' })
+        }, 1500)
+        setStatus('待保存...', '')
+      }
+    }
+
+    async function flushSave(options) {
+      options = options || { manualSnapshot: false, updatedBy: 'human' }
+      clearTimeout(saveTimer)
+
+      // 若手动保存时 pendingData 已清空，回退使用当前 mapData
+      var dataToSave = pendingData || (options.manualSnapshot ? mapData : null)
+      if (!dataToSave) return
+
+      // 防并发重入：若当前有 PUT 请求在途，排入队列待完成后执行
+      if (isSaving) {
+        queuedSaveOptions = options
+        return
+      }
+
+      isSaving = true
+      pendingData = null
+      setStatus('保存中...', 'saving')
+      try {
+        var res = await fetch('/api/maps/' + MAP_ID, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data: dataToSave,
+            revision: currentRevision,
+            title: mapTitle,
+            manualSnapshot: !!options.manualSnapshot,
+            updatedBy: options.updatedBy || 'human'
+          })
+        })
+        if (res.status === 409) {
+          var json = await res.json()
+          setStatus('冲突', 'conflict')
+          showConflictDialog(json)
+          return
+        }
+        if (!res.ok) {
+          setStatus('保存失败', 'conflict')
+          return
+        }
+        var result = await res.json()
+        currentRevision = result.revision
+        lastSavedSignature = JSON.stringify(dataToSave)
+        setStatus(options.updatedBy === 'mcp' ? '已保存 (MCP)' : '已保存', '')
+      } catch (e) {
+        console.error(e)
+        setStatus('保存失败', 'conflict')
+      } finally {
+        isSaving = false
+        if (queuedSaveOptions) {
+          var nextOpts = queuedSaveOptions
+          queuedSaveOptions = null
+          flushSave(nextOpts)
+        }
+      }
+    }
+
+    function showConflictDialog() {
+      var mask = document.createElement('div')
+      mask.className = 'mm-dialog-mask'
+      mask.innerHTML = '<div class="mm-dialog">' +
+        '<h3>版本冲突</h3>' +
+        '<div class="mm-dialog-body">其他标签页或 MCP 已修改此导图，当前修改无法直接覆盖。<br>是否刷新页面以获取最新版本？</div>' +
+        '<div class="mm-dialog-footer">' +
+          '<button id="mmConflictCancel">取消</button>' +
+          '<button id="mmConflictReload" class="primary">刷新页面</button>' +
+        '</div></div>'
+      document.body.appendChild(mask)
+      mask.querySelector('#mmConflictCancel').onclick = function() {
+        document.body.removeChild(mask)
+        setStatus('冲突', 'conflict')
+      }
+      mask.querySelector('#mmConflictReload').onclick = function() {
+        location.reload()
+      }
+    }
+
+    function showShareDialog() {
+      var mask = document.createElement('div')
+      mask.className = 'mm-dialog-mask'
+      mask.innerHTML = '<div class="mm-dialog">' +
+        '<h3>生成分享链接</h3>' +
+        '<div class="mm-dialog-body">' +
+          '<p>有效期：</p>' +
+          '<select id="mmShareExpiry" style="padding:4px 8px;border:1px solid #dcdfe6;border-radius:4px;">' +
+            '<option value="">永久</option>' +
+            '<option value="1h">1 小时</option>' +
+            '<option value="1d">1 天</option>' +
+            '<option value="7d">7 天</option>' +
+          '</select>' +
+          '<div id="mmShareResult" style="margin-top:12px;display:none;">' +
+            '<p>分享链接：</p>' +
+            '<div class="mm-share-link">' +
+              '<input id="mmShareLink" readonly>' +
+              '<button id="mmShareCopy" class="primary">复制</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="mm-dialog-footer">' +
+          '<button id="mmShareClose">关闭</button>' +
+          '<button id="mmShareCreate" class="primary">生成</button>' +
+        '</div></div>'
+      document.body.appendChild(mask)
+      mask.querySelector('#mmShareClose').onclick = function() { document.body.removeChild(mask) }
+      mask.querySelector('#mmShareCreate').onclick = async function() {
+        var expiry = mask.querySelector('#mmShareExpiry').value
+        var expires_at = null
+        if (expiry) {
+          var ms = { '1h': 3600000, '1d': 86400000, '7d': 604800000 }[expiry]
+          expires_at = new Date(Date.now() + ms).toISOString()
+        }
+        try {
+          var res = await fetch('/api/maps/' + MAP_ID + '/share', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expires_at: expires_at })
+          })
+          if (!res.ok) { alert('生成失败'); return }
+          var json = await res.json()
+          var link = location.origin + '/v/' + json.token
+          mask.querySelector('#mmShareLink').value = link
+          mask.querySelector('#mmShareResult').style.display = 'block'
+        } catch (e) { alert('生成失败：' + e.message) }
+      }
+      mask.querySelector('#mmShareCopy').onclick = function() {
+        var input = mask.querySelector('#mmShareLink')
+        input.select()
+        document.execCommand('copy')
+        this.textContent = '已复制'
+      }
+    }
+
+    function showHistoryDialog() {
+      var mask = document.createElement('div')
+      mask.className = 'mm-dialog-mask'
+      mask.innerHTML = '<div class="mm-dialog">' +
+        '<h3>历史版本</h3>' +
+        '<div class="mm-dialog-body">' +
+          '<div class="mm-version-list" id="mmVersionList">加载中...</div>' +
+        '</div>' +
+        '<div class="mm-dialog-footer">' +
+          '<button id="mmHistoryClose">关闭</button>' +
+        '</div></div>'
+      document.body.appendChild(mask)
+      mask.querySelector('#mmHistoryClose').onclick = function() { document.body.removeChild(mask) }
+      loadVersions(mask.querySelector('#mmVersionList'))
+    }
+
+    async function loadVersions(container) {
+      try {
+        var res = await fetch('/api/maps/' + MAP_ID + '/versions')
+        if (!res.ok) { container.textContent = '加载失败'; return }
+        var list = await res.json()
+        if (list.length === 0) { container.textContent = '暂无历史版本'; return }
+        container.innerHTML = ''
+        list.forEach(function(v) {
+          var item = document.createElement('div')
+          item.className = 'mm-version-item'
+          var date = new Date(v.created_at).toLocaleString()
+          item.innerHTML = '<span>#' + v.revision + ' · ' + v.source + ' · ' + date + '</span>' +
+            '<button class="primary" data-id="' + v.id + '">恢复</button>'
+          container.appendChild(item)
+        })
+        container.querySelectorAll('button[data-id]').forEach(function(btn) {
+          btn.onclick = async function() {
+            if (!confirm('确定要恢复到此版本？当前版本将自动存档。')) return
+            var vid = btn.getAttribute('data-id')
+            var r = await fetch('/api/maps/' + MAP_ID + '/versions/' + vid + '/restore', { method: 'POST' })
+            if (!r.ok) { alert('恢复失败'); return }
+            location.reload()
+          }
+        })
+      } catch (e) { container.textContent = '加载失败：' + e.message }
+    }
+
+    titleEl.onclick = function() {
+      var newTitle = prompt('请输入新标题：', mapTitle)
+      if (newTitle === null || newTitle === mapTitle) return
+      fetch('/api/maps/' + MAP_ID + '/title', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle })
+      }).then(function(res) {
+        if (res.ok) {
+          mapTitle = newTitle
+          titleEl.textContent = newTitle
+          titleEl.title = newTitle
+        }
+      })
+    }
+
+    document.getElementById('mmShareBtn').onclick = showShareDialog
+    document.getElementById('mmHistoryBtn').onclick = showHistoryDialog
+
+    // ── 「保存」按钮 ──
+    document.getElementById('mmSaveBtn').onclick = function() {
+      if (mindMapInstance && mindMapInstance.getData) {
+        mapData = Object.assign({}, mapData, mindMapInstance.getData(true))
+        pendingData = mapData
+      }
+      flushSave({ manualSnapshot: true, updatedBy: 'human' })
+    }
+
+    // ── 5 秒定时主动保存 ──
+    function autoSave_check() {
+      if (isSaving || !mindMapInstance || !mindMapInstance.getData) return
+      try {
+        var liveData = Object.assign({}, mapData, mindMapInstance.getData(true))
+        var liveSig = JSON.stringify(liveData)
+        if (pendingData || (lastSavedSignature && liveSig !== lastSavedSignature)) {
+          mapData = liveData
+          pendingData = liveData
+          flushSave({ manualSnapshot: false, updatedBy: 'human' })
+        }
+      } catch (e) {
+        console.warn('[AutoSave] 定时巡检异常', e)
+      }
+    }
+    autoSaveTimer = setInterval(autoSave_check, AUTO_SAVE_INTERVAL_MS)
+
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        // 直接触发带快照的立即保存；若 Edit.vue 随后触发 debouncedSave，由 isSaving 队列合并防重
+        flushSave({ manualSnapshot: true, updatedBy: 'human' })
+      }
+    })
+
+    window.takeOverAppMethods = {
+      getMindMapData: function() { return mapData },
+      saveMindMapData: function(data) {
+        mapData = Object.assign({}, mapData, data)
+        debouncedSave(mapData)
+      },
+      getMindMapConfig: function() { return (mapData && mapData.config) || {} },
+      saveMindMapConfig: function() {},
+      getLanguage: function() { return 'zh' },
+      saveLanguage: function() {},
+      getLocalConfig: function() { return null },
+      saveLocalConfig: function() {}
+    }
+
+    // ---- Markdown 解析为导图节点树 ----
+    function parseMarkdownToRoot(md) {
+      if (!md || !md.trim()) return null
+      var lines = md.split(new RegExp('\\\\r?\\\\n'))
+      var root = { data: { text: '中心主题' }, children: [] }
+      var stack = [{ node: root, depth: -1 }]
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i]
+        var trimmed = line.trim()
+        if (!trimmed) continue
+
+        var depth = -1
+        var text = ''
+
+        // 解析标题层级 (# ~ ######)
+        var hMatch = line.match(new RegExp('^(#{1,6})\\\\s+(.*)'))
+        if (hMatch) {
+          depth = hMatch[1].length - 1
+          text = hMatch[2].replace(new RegExp('[*_\x60]', 'g'), '').trim()
+        } else {
+          // 解析列表项 (- / * / + / 1.)
+          var lMatch = line.match(new RegExp('^(\\\\s*)[\\\\-\\\\*\\\\+]\\\\s+(.*)'))
+          if (!lMatch) lMatch = line.match(new RegExp('^(\\\\s*)\\\\d+\\\\.\\\\s+(.*)'))
+          if (lMatch) {
+            var indent = lMatch[1].length
+            depth = Math.floor(indent / 2) + 1
+            text = lMatch[2].replace(new RegExp('[*_\x60]', 'g'), '').trim()
+          }
+        }
+        if (depth < 0 || !text) continue
+
+        var node = { data: { text: text }, children: [] }
+
+        if (depth > stack[stack.length - 1].depth) {
+          // 更深层级 → 作为上一个节点的子节点
+          stack[stack.length - 1].node.children.push(node)
+        } else if (depth === stack[stack.length - 1].depth) {
+          // 同级 → 出栈到父节点
+          stack.pop()
+          stack[stack.length - 1].node.children.push(node)
+        } else {
+          // 更浅层级 → 一直出栈直到找到合适的父节点
+          while (stack.length > 1 && stack[stack.length - 1].depth >= depth) {
+            stack.pop()
+          }
+          stack[stack.length - 1].node.children.push(node)
+        }
+        stack.push({ node: node, depth: depth })
+      }
+
+      return root.children[0] || root
+    }
+
+    // ---- MCP WebSocket 桥接 ----
+    var mcpWs = null
+    var mcpManualClose = false
+    var mcpReconnectDelay = 1000
+    var mcpMaxReconnectDelay = 15000
+
+    function handleMcpMessage(msg) {
+      if (!mindMapInstance) return
+      switch (msg.type) {
+        case 'set_mind_map_data': {
+          var fullData = msg.fullData
+          if (!fullData && msg.data) {
+            var root = parseMarkdownToRoot(msg.data)
+            if (!root) return
+            fullData = {
+              root: root,
+              layout: msg.layout || mindMapInstance.getLayout(),
+              theme: { template: msg.theme || mindMapInstance.getTheme(), config: mindMapInstance.getCustomThemeConfig ? mindMapInstance.getCustomThemeConfig() : {} }
+            }
+          }
+          if (!fullData) return
+          currentRevision = msg.revision || currentRevision
+          if (msg.title) { mapTitle = msg.title; titleEl.textContent = msg.title; titleEl.title = msg.title }
+          if (msg.savedByServer) suppressNextAutoSave = true
+          window.$bus.$emit('setData', fullData)
+          break
+        }
+        case 'set_mind_map_layout': {
+          if (!msg.layout) return
+          currentRevision = msg.revision || currentRevision
+          if (msg.savedByServer) suppressNextAutoSave = true
+          mindMapInstance.setLayout(msg.layout)
+          if (!msg.savedByServer) {
+            mcpSavePending = true
+            window.takeOverAppMethods.saveMindMapData(mindMapInstance.getData(true))
+          }
+          break
+        }
+        case 'set_mind_map_theme': {
+          if (!msg.theme) return
+          currentRevision = msg.revision || currentRevision
+          if (msg.savedByServer) suppressNextAutoSave = true
+          mindMapInstance.setTheme(msg.theme)
+          if (!msg.savedByServer) {
+            mcpSavePending = true
+            window.takeOverAppMethods.saveMindMapData(mindMapInstance.getData(true))
+          }
+          break
+        }
+        case 'export_mind_map_to': {
+          if (msg.exportOnBrowser) {
+            window.$bus.$emit('export', msg.exportType, true, '思维导图')
+            // 浏览器下载模式：回传确认给服务端
+            if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+              mcpWs.send(JSON.stringify({ type: 'export_mind_map_to', id: msg.id, data: '' }))
+            }
+          } else {
+            // 服务端保存模式：异步导出并回传数据
+            ;(async function() {
+              try {
+                if (mindMapInstance.renderer && mindMapInstance.renderer.isRendering) {
+                  await new Promise(function(resolve) {
+                    var timer = setTimeout(resolve, 3000)
+                    window.$bus.$once('node_tree_render_end', function() { clearTimeout(timer); resolve() })
+                  })
+                }
+                var exportData = await mindMapInstance.export(msg.exportType, false, '思维导图')
+                if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+                  mcpWs.send(JSON.stringify({ type: 'export_mind_map_to', data: exportData, id: msg.id }))
+                }
+              } catch (err) {
+                if (mcpWs && mcpWs.readyState === WebSocket.OPEN) {
+                  mcpWs.send(JSON.stringify({ type: 'export_mind_map_to', error: err && err.message ? err.message : String(err), id: msg.id }))
+                }
+              }
+            })()
+          }
+          break
+        }
+        case 'close_editor': {
+          mcpManualClose = true
+          if (mcpWs) mcpWs.close()
+          break
+        }
+      }
+    }
+
+    function initMcpBridge() {
+      var wsUrl = window.__MCP_WS_URL__ || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/mcp?mapId=' + encodeURIComponent(MAP_ID))
+      try {
+        mcpWs = new WebSocket(wsUrl)
+      } catch (e) {
+        // MCP Server 尚未启动，静默降级并安排重连
+        setTimeout(initMcpBridge, mcpReconnectDelay)
+        mcpReconnectDelay = Math.min(mcpReconnectDelay * 2, mcpMaxReconnectDelay)
+        return
+      }
+
+      mcpWs.onmessage = function(event) {
+        try {
+          var msg = JSON.parse(event.data)
+          handleMcpMessage(msg)
+        } catch (e) {
+          console.warn('[MCP] 消息解析失败', e)
+        }
+      }
+
+      mcpWs.onopen = function() {
+        mcpReconnectDelay = 1000
+      }
+
+      mcpWs.onclose = function() {
+        mcpWs = null
+        if (mcpManualClose) return
+        // 指数退避静默重连
+        setTimeout(initMcpBridge, mcpReconnectDelay)
+        mcpReconnectDelay = Math.min(mcpReconnectDelay * 2, mcpMaxReconnectDelay)
+      }
+
+      mcpWs.onerror = function() {
+        // 静默处理，onclose 会触发重连
+      }
+    }
+
+    window.$bus.$on('app_inited', function(mm) {
+      mindMapInstance = mm
+      // 初始化签名
+      if (mapData) lastSavedSignature = JSON.stringify(mapData)
+      initMcpBridge()
+    })
+
+    window.onload = async function() {
+      await fetchMap()
+      window.initApp()
+    }
+  })()
+  </script>
+</body>
+</html>`
+}
+
+// 生成只读页宿主 HTML
+export function buildViewHostHtml ({ token, title }) {
+  const cssLinks = buildCssLinks()
+  const jsScripts = buildJsScripts()
+  return `<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1,minimum-scale=1">
+  <link rel="icon" href="/dist/logo.ico">
+  <title>${escapeHtml(title || '思绪思维导图 - 只读')}</title>
+  <script>
+    window.externalPublicPath = '/dist/'
+    window.takeOverApp = true
+    window.__SHARE_TOKEN__ = '${escapeJs(token)}'
+  </script>
+  ${cssLinks}
+  <style>
+    .toolbarContainer,
+    .navigatorContainer,
+    .sidebarTriggerContainer,
+    .contextmenuContainer {
+      display: none !important;
+    }
+    .mm-readonly-bar {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.92);
+      border: 1px solid #e4e7ed;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      z-index: 9999;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mm-readonly-bar .mm-badge {
+      background: #e6a23c;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <noscript>请启用 JavaScript 以继续使用思绪思维导图。</noscript>
+  <div id="app"></div>
+  <div class="mm-readonly-bar" id="mmReadonlyBar" style="display:none;">
+    <span id="mmReadonlyTitle"></span>
+    <span class="mm-badge">只读</span>
+  </div>
+  ${jsScripts}
+  <script>
+  (function() {
+    var TOKEN = window.__SHARE_TOKEN__
+    var mapData = null
+    var mapTitle = ''
+
+    async function fetchShare() {
+      var res = await fetch('/api/shares/' + TOKEN)
+      if (!res.ok) {
+        document.body.innerHTML = '<div style="text-align:center;padding:80px;color:#f56c6c;font-size:16px;">链接无效或已过期</div>'
+        return false
+      }
+      var json = await res.json()
+      mapData = json.data
+      mapTitle = json.title
+      document.getElementById('mmReadonlyTitle').textContent = mapTitle
+      document.getElementById('mmReadonlyBar').style.display = 'flex'
+      return true
+    }
+
+    window.takeOverAppMethods = {
+      getMindMapData: function() { return mapData },
+      saveMindMapData: function() {},
+      getMindMapConfig: function() { return {} },
+      saveMindMapConfig: function() {},
+      getLanguage: function() { return 'zh' },
+      saveLanguage: function() {},
+      getLocalConfig: function() { return null },
+      saveLocalConfig: function() {}
+    }
+
+    window.onload = async function() {
+      var ok = await fetchShare()
+      if (!ok) return
+      window.initApp()
+      window.$bus.$on('app_inited', function(mindMap) {
+        mindMap.setMode('readonly')
+      })
+    }
+  })()
+  </script>
+</body>
+</html>`
+}
+
+function escapeHtml (str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function escapeJs (str) {
+  return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"')
+}

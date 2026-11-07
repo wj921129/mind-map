@@ -169,11 +169,19 @@ class Base {
         data._node.nodeDataSnapshot,
         data.data
       )
+      // 节点生效形状或布局角色改变了，如新增子分支使矩形变为菱形
+      const isShapeOrRoleChange = this.checkIsShapeOrRoleChange(
+        newNode,
+        data,
+        parent,
+        isRoot
+      )
       // 重新计算节点大小和布局
       if (
         isResizeSource ||
         isNodeDataChange ||
         isLayerTypeChange ||
+        isShapeOrRoleChange ||
         (newNode.getData('resetRichText') && // 自定义节点内容可以直接忽略resetRichText
           !newNode.isUseCustomNodeContent()) ||
         newNode.getData('needUpdate') ||
@@ -220,11 +228,19 @@ class Base {
         nodeInnerPrefixData,
         nodeInnerPostfixData
       )
+      // 节点生效形状或布局角色改变了，如新增子分支使矩形变为菱形
+      const isShapeOrRoleChange = this.checkIsShapeOrRoleChange(
+        newNode,
+        data,
+        parent,
+        isRoot
+      )
       // 重新计算节点大小和布局
       if (
         isResizeSource ||
         isNodeDataChange ||
         isLayerTypeChange ||
+        isShapeOrRoleChange ||
         (newNode.getData('resetRichText') &&
           !newNode.isUseCustomNodeContent()) ||
         newNode.getData('needUpdate') ||
@@ -253,6 +269,8 @@ class Base {
       this.cacheNode(newUid, newNode)
       // 数据关联实际节点
       data._node = newNode
+      // 记录新节点的生效形状与布局角色，供复用节点时对比是否发生变化
+      this.checkIsShapeOrRoleChange(newNode, data, parent, isRoot)
     }
     // 如果该节点数据是已激活状态，那么添加到激活节点列表里
     if (data.data.isActive) {
@@ -272,6 +290,22 @@ class Base {
       parent._node.addChildren(newNode)
     }
     return newNode
+  }
+
+  // 检查节点生效形状或布局角色是否发生变化
+  // 变化时需要重新计算节点大小，防止菱形沿用矩形的小宽高导致文字溢出斜边
+  checkIsShapeOrRoleChange(node, data, parent, isRoot) {
+    const curEffectiveShape = node.getShape()
+    const hasRoleApi = typeof this.getFlowchartNodeRole === 'function'
+    const curFlowchartRole = hasRoleApi
+      ? this.getFlowchartNodeRole(data, parent, isRoot)
+      : null
+    const isShapeOrRoleChange =
+      node._lastEffectiveShape !== curEffectiveShape ||
+      (hasRoleApi && node._flowchartRole !== curFlowchartRole)
+    node._lastEffectiveShape = curEffectiveShape
+    node._flowchartRole = curFlowchartRole
+    return isShapeOrRoleChange
   }
 
   // 检查概要节点是否需要更新

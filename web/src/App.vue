@@ -11,6 +11,8 @@ export default {
 </script>
 
 <style lang="less">
+@import './style/tokens.less';
+
 * {
   margin: 0;
   padding: 0;
@@ -18,7 +20,7 @@ export default {
 }
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
-  color: #2c3e50;
+  color: @text-main;
 }
 
 .customScrollbar {
@@ -29,8 +31,13 @@ export default {
 
   &::-webkit-scrollbar-thumb {
     border-radius: 7px;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.2);
     cursor: pointer;
+    transition: background-color @duration-fast @ease-out;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.35);
+    }
   }
 
   &::-webkit-scrollbar-track {
@@ -40,7 +47,19 @@ export default {
   }
 }
 
-.el-dialog{
-  border-radius: 10px;
+// 暗黑模式下自定义滚动条滑块样式
+body.isDark {
+  .customScrollbar::-webkit-scrollbar-thumb,
+  &.customScrollbar::-webkit-scrollbar-thumb {
+    background-color: hsla(0, 0%, 100%, 0.22);
+
+    &:hover {
+      background-color: hsla(0, 0%, 100%, 0.38);
+    }
+  }
+}
+
+.el-dialog {
+  border-radius: @radius-lg;
 }
 </style>

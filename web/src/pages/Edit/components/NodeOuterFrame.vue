@@ -512,20 +512,24 @@ export default {
 </script>
 
 <style lang="less">
+@import '../../../style/tokens.less';
+
 .el-select-dropdown__item.selected {
   .borderLine {
-    background-color: #409eff;
+    background-color: @primary;
   }
 }
 </style>
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .sidebarContent {
   padding: 20px;
 
   &.isDark {
     .panelHeader {
       .name {
-        color: #fff;
+        color: @dark-text-main;
       }
     }
 
@@ -533,14 +537,18 @@ export default {
       .row {
         .rowItem {
           .name {
-            color: hsla(0, 0%, 100%, 0.6);
+            color: @dark-text-sub;
+          }
+
+          .block {
+            border-color: @dark-border;
           }
         }
 
         .styleBtn {
-          background-color: #363b3f;
-          color: hsla(0, 0%, 100%, 0.6);
-          border-color: hsla(0, 0%, 100%, 0.1);
+          background-color: @dark-panel;
+          color: @dark-text-sub;
+          border-color: @dark-border;
         }
       }
     }
@@ -549,14 +557,14 @@ export default {
   .btn {
     width: 24px;
     height: 24px;
-    background-color: #fff;
+    background-color: @panel-bg;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 16px 0 rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: @shadow-panel;
+    border: 1px solid @border-weak;
   }
 
   .panelHeader {
@@ -569,16 +577,21 @@ export default {
       font-size: 16px;
       font-family: PingFangSC-Medium, PingFang SC;
       font-weight: 500;
-      color: rgba(26, 26, 26, 0.9);
+      color: @text-main;
     }
 
     .deleteBtn {
       display: flex;
       align-items: center;
-      color: #909090;
+      color: @text-weak;
       font-size: 14px;
       cursor: pointer;
       user-select: none;
+      transition: color @duration-fast @ease-out;
+
+      &:hover {
+        color: @danger;
+      }
 
       .iconfont {
         margin-left: 2px;
@@ -617,9 +630,14 @@ export default {
           display: inline-block;
           width: 20px;
           height: 20px;
-          border: 1px solid #dcdfe6;
-          border-radius: 4px;
+          border: 1px solid @border-weak;
+          border-radius: @radius-sm;
           cursor: pointer;
+          transition: border-color @duration-fast @ease-out;
+
+          &:hover {
+            border-color: @primary;
+          }
         }
       }
 
@@ -627,17 +645,24 @@ export default {
         position: relative;
         width: 50px;
         height: 30px;
-        background: #fff;
-        border: 1px solid #eee;
+        background: transparent;
+        border: 1px solid @border-weak;
         display: flex;
         justify-content: center;
         align-items: center;
         font-weight: bold;
         cursor: pointer;
-        border-radius: 4px;
+        border-radius: @radius-sm;
+        transition: background-color @duration-fast @ease-out,
+          border-color @duration-fast @ease-out;
+
+        &:hover {
+          background-color: @fill-hover;
+          border-color: @primary;
+        }
 
         &.actived {
-          background-color: #eee;
+          background-color: @fill-active;
         }
 
         &.disabled {

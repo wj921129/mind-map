@@ -71,48 +71,71 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .sidebarContainer {
   position: fixed;
-  right: -300px;
+  right: -@sidebar-width;
   top: 110px;
   bottom: 0;
-  width: 300px;
-  background-color: #fff;
-  border-left: 1px solid #e8e8e8;
+  width: @sidebar-width;
+  background-color: @panel-bg;
+  backdrop-filter: saturate(180%) blur(16px);
+  border-left: 1px solid @border-weak;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s;
+  transition: all @duration-base @ease-out;
 
   &.isDark {
-    background-color: #262a2e;
-    border-left-color: hsla(0, 0%, 100%, 0.1);
+    background-color: @dark-panel-blur;
+    border-left-color: @dark-border;
 
     .sidebarHeader {
-      border-bottom-color: hsla(0, 0%, 100%, 0.1);
-      color: #fff;
+      border-bottom-color: @dark-border;
+      color: @dark-text-main;
     }
 
     .closeBtn {
-      color: #fff;
+      color: @dark-text-sub;
+
+      &:hover {
+        background-color: @dark-fill-hover;
+        color: @dark-text-main;
+      }
     }
   }
 
   &.show {
     right: 0;
+    box-shadow: @shadow-panel;
   }
 
   .closeBtn {
     position: absolute;
-    right: 20px;
-    top: 12px;
-    font-size: 20px;
+    right: 12px;
+    top: 8px;
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: @radius-sm;
     cursor: pointer;
+    color: @text-sub;
+    transition: background-color @duration-fast @ease-out,
+      color @duration-fast @ease-out;
+
+    &:hover {
+      background-color: @fill-hover;
+      color: @text-main;
+    }
   }
 
   .sidebarHeader {
     width: 100%;
     height: 44px;
-    border-bottom: 1px solid #e8e8e8;
+    border-bottom: 1px solid @border-weak;
     display: flex;
     justify-content: center;
     align-items: center;

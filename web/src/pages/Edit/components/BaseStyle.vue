@@ -528,8 +528,8 @@
                     style.associativeLineDasharray === item.value
                       ? '#409eff'
                       : isDark
-                      ? '#fff'
-                      : '#000'
+                      ? 'rgba(255, 255, 255, 0.85)'
+                      : 'rgba(26, 26, 26, 0.85)'
                   "
                   :stroke-dasharray="item.value"
                 ></line>
@@ -1084,20 +1084,53 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .sidebarContent {
   padding: 20px;
   padding-top: 10px;
 
   &.isDark {
     .title {
-      color: #fff;
+      color: @dark-text-main;
+    }
+
+    .borderLine {
+      background-color: @dark-text-main;
     }
 
     .row {
       .rowItem {
         .name,
         .curRainbowLine {
-          color: hsla(0, 0%, 100%, 0.6);
+          color: @dark-text-sub;
+        }
+
+        .block {
+          border-color: @dark-border;
+
+          &.disabled {
+            background-color: @dark-disabled-bg !important;
+            border-color: @dark-disabled-border !important;
+            color: @dark-disabled-text !important;
+          }
+        }
+
+        .curRainbowLine {
+          border-color: @dark-border;
+        }
+      }
+
+      .styleBtn,
+      .fontStyleBtn {
+        background-color: @dark-panel;
+        color: @dark-text-sub;
+        border-color: @dark-border;
+
+        &.disabled {
+          background-color: @dark-disabled-bg !important;
+          border-color: @dark-disabled-border !important;
+          color: @dark-disabled-text !important;
         }
       }
     }
@@ -1107,7 +1140,7 @@ export default {
     font-size: 16px;
     font-family: PingFangSC-Medium, PingFang SC;
     font-weight: 500;
-    color: rgba(26, 26, 26, 0.9);
+    color: @text-main;
     margin-bottom: 10px;
     margin-top: 35px;
 
@@ -1162,25 +1195,36 @@ export default {
         display: inline-block;
         width: 30px;
         height: 30px;
-        border: 1px solid #dcdfe6;
-        border-radius: 4px;
+        border: 1px solid @border-weak;
+        border-radius: @radius-sm;
         cursor: pointer;
+        transition: border-color @duration-fast @ease-out;
+
+        &:hover {
+          border-color: @primary;
+        }
       }
 
       .curRainbowLine {
         height: 24px;
-        border: 1px solid #dcdfe6;
+        border: 1px solid @border-weak;
+        border-radius: @radius-sm;
         font-size: 12px;
         width: 240px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        transition: border-color @duration-fast @ease-out;
+
+        &:hover {
+          border-color: @primary;
+        }
       }
 
       .iconBtn {
         cursor: pointer;
-        transition: all 0.3s;
+        transition: all @duration-base @ease-out;
 
         &.top {
           transform: rotateZ(-180deg);
@@ -1192,17 +1236,24 @@ export default {
       position: relative;
       width: 50px;
       height: 30px;
-      background: #fff;
-      border: 1px solid #eee;
+      background: transparent;
+      border: 1px solid @border-weak;
       display: flex;
       justify-content: center;
       align-items: center;
       font-weight: bold;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: @radius-sm;
+      transition: background-color @duration-fast @ease-out,
+        border-color @duration-fast @ease-out;
+
+      &:hover {
+        background-color: @fill-hover;
+        border-color: @primary;
+      }
 
       &.actived {
-        background-color: #eee;
+        background-color: @fill-active;
       }
 
       .colorShow {
@@ -1227,15 +1278,20 @@ export default {
       .bgItem {
         width: 120px;
         height: 73px;
-        border: 1px solid #e9e9e9;
-        border-radius: 5px;
+        border: 1px solid @border-weak;
+        border-radius: @radius-md;
         overflow: hidden;
         padding: 5px;
         margin-bottom: 8px;
         cursor: pointer;
+        transition: all @duration-base @ease-out;
+
+        &:hover {
+          box-shadow: @shadow-float;
+        }
 
         &.active {
-          border-color: #409eff;
+          border-color: @primary;
         }
 
         img {
@@ -1251,25 +1307,34 @@ export default {
 .borderLine {
   display: inline-block;
   width: 100%;
-  background-color: #000;
+  background-color: @text-main;
 
   &.isDark {
-    background-color: #fff;
+    background-color: @dark-text-main;
   }
 }
 </style>
 <style lang="less">
+@import '../../../style/tokens.less';
+
 .el-select-dropdown__item.selected {
   .borderLine {
-    background-color: #409eff;
+    background-color: @primary;
   }
 }
 
-.lineStyleOption {
+.borderLine {
+  &.isDark {
+    background-color: @dark-text-main;
+  }
+}
+
+.lineStyleOption,
+.lineUseStyle {
   &.isDark {
     svg {
       path {
-        stroke: #fff;
+        stroke: @dark-text-main;
       }
     }
   }
@@ -1277,7 +1342,7 @@ export default {
   &.isSelected {
     svg {
       path {
-        stroke: #409eff;
+        stroke: @primary;
       }
     }
   }
@@ -1286,7 +1351,7 @@ export default {
     margin-top: 4px;
 
     path {
-      stroke: #000;
+      stroke: @text-main;
     }
   }
 }
@@ -1296,10 +1361,10 @@ export default {
 
   &.isDark {
     .optionItem {
-      color: hsla(0, 0%, 100%, 0.6);
+      color: @dark-text-sub;
 
       &:hover {
-        background-color: hsla(0, 0%, 100%, 0.05);
+        background-color: @dark-fill-hover;
       }
     }
   }
@@ -1311,9 +1376,10 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background-color @duration-fast @ease-out;
 
     &:hover {
-      background-color: #f5f7fa;
+      background-color: @fill-hover;
     }
   }
 }

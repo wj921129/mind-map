@@ -2,7 +2,7 @@
   <div
     v-if="showMiniMap"
     class="navigatorBox"
-    :class="{ isDark: isDark }"
+    :class="{ isDark: isDark, hasActiveSidebar: !!activeSidebar }"
     ref="navigatorBox"
     :style="{ width: width + 'px' }"
     @mousedown="onMousedown"
@@ -61,7 +61,8 @@ export default {
   },
   computed: {
     ...mapState({
-      isDark: state => state.localConfig.isDark
+      isDark: state => state.localConfig.isDark,
+      activeSidebar: state => state.activeSidebar
     })
   },
   mounted() {
@@ -195,20 +196,32 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
 .navigatorBox {
   position: absolute;
   height: 220px;
-  background-color: #fff;
+  background-color: @panel-bg;
+  backdrop-filter: saturate(180%) blur(16px);
   bottom: 80px;
   right: 70px;
-  box-shadow: 0 0 16px #989898;
-  border-radius: 4px;
-  border: 1px solid #eee;
+  box-shadow: @shadow-float;
+  border-radius: @radius-lg;
+  border: 1px solid @border-weak;
   cursor: pointer;
   user-select: none;
+  overflow: hidden;
+  transition: right @duration-base @ease-out,
+    background-color @duration-base @ease-out,
+    border-color @duration-base @ease-out;
 
   &.isDark {
-    background-color: #262a2e;
+    background-color: @dark-panel-blur;
+    border-color: @dark-border;
+    box-shadow: @shadow-float;
+  }
+
+  &.hasActiveSidebar {
+    right: @sidebar-width + 70px;
   }
 
   .svgBox {

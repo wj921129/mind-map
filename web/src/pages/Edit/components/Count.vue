@@ -70,37 +70,58 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .countContainer {
-  padding: 0 12px;
+  padding: 0 14px;
   position: fixed;
   left: 20px;
   bottom: 20px;
-  background: hsla(0, 0%, 100%, 0.8);
-  border-radius: 2px;
-  opacity: 0.8;
-  height: 22px;
-  line-height: 22px;
-  font-size: 12px;
+  background-color: @panel-bg;
+  backdrop-filter: saturate(180%) blur(16px);
+  border: 1px solid @border-weak;
+  border-radius: @radius-md;
+  box-shadow: @shadow-panel;
+  height: 32px;
+  font-size: @font-size-sm;
+  color: @text-sub;
   display: flex;
+  align-items: center;
+  user-select: none;
+  z-index: 100;
 
   &.isDark {
-    background: #262a2e;
+    background-color: @dark-panel-blur;
+    border-color: @dark-border;
+    color: @dark-text-sub;
 
     .item {
-      color: hsla(0, 0%, 100%, 0.6);
+      color: @dark-text-sub;
+
+      .value {
+        color: @dark-text-main;
+      }
     }
   }
 
   .item {
-    color: #555;
-    margin-right: 15px;
+    color: @text-sub;
+    margin-right: 14px;
+    display: flex;
+    align-items: center;
 
+    &:last-child,
     &:last-of-type {
       margin-right: 0;
     }
 
     .name {
       margin-right: 5px;
+    }
+
+    .value {
+      color: @text-main;
+      font-weight: 500;
     }
   }
 }

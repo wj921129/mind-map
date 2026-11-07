@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>思绪思维导图 - 列表</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f7fa;
+      color: #303133;
+      min-height: 100vh;
+    }
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #e4e7ed;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #303133;
+    }
+    .header .actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      border: 1px solid #dcdfe6;
+      background: #fff;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #606266;
+      transition: all 0.2s;
+    }
+    .btn:hover { color: #409eff; border-color: #409eff; }
+    .btn.primary { background: #409eff; color: #fff; border-color: #409eff; }
+    .btn.primary:hover { background: #66b1ff; border-color: #66b1ff; }
+    .btn.danger { color: #f56c6c; border-color: #f56c6c; }
+    .btn.danger:hover { background: #f56c6c; color: #fff; }
+    .container {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 24px;
+    }
+    .empty {
+      text-align: center;
+      padding: 80px 20px;
+      color: #909399;
+      font-size: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e4e7ed;
+      border-radius: 8px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #303133;
+      margin-bottom: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card-meta {
+      font-size: 12px;
+      color: #909399;
+      margin-bottom: 12px;
+    }
+    .card-meta span {
+      display: inline-block;
+      margin-right: 12px;
+    }
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .card:hover .card-actions {
+      opacity: 1;
+    }
+    .card-actions button {
+      border: 1px solid #dcdfe6;
+      background: #fff;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #606266;
+    }
+    .card-actions button:hover { color: #409eff; border-color: #409eff; }
+    .card-actions button.danger:hover { color: #f56c6c; border-color: #f56c6c; }
+    .dialog-mask {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .dialog {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      min-width: 360px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .dialog h3 {
+      margin-bottom: 16px;
+      font-size: 16px;
+    }
+    .dialog input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .dialog input:focus {
+      outline: none;
+      border-color: #409eff;
+    }
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>思绪思维导图</h1>
+    <div class="actions">
+      <button class="btn primary" id="newBtn">+ 新建导图</button>
+    </div>
+  </div>
+  <div class="container">
+    <div id="listContainer"></div>
+  </div>
+
+  <script>
+    const listContainer = document.getElementById('listContainer')
+    const newBtn = document.getElementById('newBtn')
+
+    async function loadList() {
+      try {
+        const res = await fetch('/api/maps')
+        if (!res.ok) throw new Error('加载失败')
+        const list = await res.json()
+        renderList(list)
+      } catch (e) {
+        listContainer.innerHTML = '<div class="empty">加载失败：' + e.message + '</div>'
+      }
+    }
+
+    function renderList(list) {
+      if (list.length === 0) {
+        listContainer.innerHTML = '<div class="empty">暂无导图，点击右上角"新建导图"开始创建</div>'
+        return
+      }
+      const grid = document.createElement('div')
+      grid.className = 'grid'
+      list.forEach(item => {
+        const card = document.createElement('div')
+        card.className = 'card'
+        card.onclick = function(e) {
+          if (e.target.tagName === 'BUTTON') return
+          window.location.href = '/e/' + item.id
+        }
+        const date = new Date(item.updated_at).toLocaleString()
+        card.innerHTML =
+          '<div class="card-title">' + escapeHtml(item.title) + '</div>' +
+          '<div class="card-meta">' +
+            '<span>修订 #' + item.revision + '</span>' +
+            '<span>更新：' + date + '</span>' +
+            '<span>来源：' + (item.updated_by || '-') + '</span>' +
+          '</div>' +
+          '<div class="card-actions">' +
+            '<button data-action="rename" data-id="' + item.id + '" data-title="' + escapeHtml(item.title) + '">重命名</button>' +
+            '<button data-action="delete" data-id="' + item.id + '" class="danger">删除</button>' +
+          '</div>'
+        grid.appendChild(card)
+      })
+      listContainer.innerHTML = ''
+      listContainer.appendChild(grid)
+      grid.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.onclick = function(e) {
+          e.stopPropagation()
+          const action = btn.getAttribute('data-action')
+          const id = btn.getAttribute('data-id')
+          if (action === 'rename') {
+            const title = btn.getAttribute('data-title')
+            showRenameDialog(id, title)
+          } else if (action === 'delete') {
+            showDeleteConfirm(id)
+          }
+        }
+      })
+    }
+
+    function showRenameDialog(id, oldTitle) {
+      const mask = document.createElement('div')
+      mask.className = 'dialog-mask'
+      mask.innerHTML =
+        '<div class="dialog">' +
+          '<h3>重命名</h3>' +
+          '<input id="renameInput" type="text" value="' + escapeHtml(oldTitle) + '">' +
+          '<div class="dialog-footer">' +
+            '<button class="btn" id="renameCancel">取消</button>' +
+            '<button class="btn primary" id="renameConfirm">确定</button>' +
+          '</div>' +
+        '</div>'
+      document.body.appendChild(mask)
+      const input = mask.querySelector('#renameInput')
+      input.focus()
+      input.select()
+      mask.querySelector('#renameCancel').onclick = function() { document.body.removeChild(mask) }
+      mask.querySelector('#renameConfirm').onclick = async function() {
+        const newTitle = input.value.trim()
+        if (!newTitle) { alert('标题不能为空'); return }
+        try {
+          const res = await fetch('/api/maps/' + id + '/title', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle })
+          })
+          if (!res.ok) throw new Error('重命名失败')
+          document.body.removeChild(mask)
+          loadList()
+        } catch (e) {
+          alert(e.message)
+        }
+      }
+      input.onkeydown = function(e) {
+        if (e.key === 'Enter') mask.querySelector('#renameConfirm').click()
+        if (e.key === 'Escape') mask.querySelector('#renameCancel').click()
+      }
+    }
+
+    function showDeleteConfirm(id) {
+      if (!confirm('确定要删除此导图吗？此操作不可撤销。')) return
+      fetch('/api/maps/' + id, { method: 'DELETE' })
+        .then(res => {
+          if (res.ok) loadList()
+          else alert('删除失败')
+        })
+        .catch(e => alert('删除失败：' + e.message))
+    }
+
+    newBtn.onclick = async function() {
+      try {
+        const res = await fetch('/api/maps', { method: 'POST' })
+        if (!res.ok) throw new Error('创建失败')
+        const json = await res.json()
+        window.location.href = '/e/' + json.id
+      } catch (e) {
+        alert(e.message)
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+    }
+
+    loadList()
+  </script>
+</body>
+</html>

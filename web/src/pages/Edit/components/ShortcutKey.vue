@@ -55,25 +55,27 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .box {
   padding: 0 20px;
 
   &.isDark {
     .title {
-      color: #fff;
+      color: @dark-text-main;
     }
 
     .list {
       .item {
         .icon {
-          color: hsla(0, 0%, 100%, 0.6);
+          color: @dark-text-sub;
         }
         .name {
-          color: hsla(0, 0%, 100%, 0.6);
+          color: @dark-text-sub;
         }
 
         .value {
-          color: hsla(0, 0%, 100%, 0.3);
+          color: @dark-text-weak;
         }
       }
     }
@@ -82,7 +84,7 @@ export default {
   .title {
     font-size: 16px;
     font-weight: 500;
-    color: #333;
+    color: @text-main;
     margin: 26px 0 20px;
   }
 
@@ -100,14 +102,14 @@ export default {
       }
 
       .name {
-        color: #333;
+        color: @text-main;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
       .value {
-        color: #909090;
+        color: @text-weak;
         margin-left: auto;
         white-space: nowrap;
         overflow: hidden;

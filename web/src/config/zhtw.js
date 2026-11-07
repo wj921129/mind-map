@@ -677,5 +677,9 @@ export const layoutGroupList = [
   {
     name: '魚骨圖',
     list: ['fishbone']
+  },
+  {
+    name: '流程圖',
+    list: ['flowchart', 'flowchart2']
   }
 ]

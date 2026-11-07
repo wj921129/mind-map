@@ -6,6 +6,7 @@ import OrganizationStructure from '../../layouts/OrganizationStructure'
 import Timeline from '../../layouts/Timeline'
 import VerticalTimeline from '../../layouts/VerticalTimeline'
 import Fishbone from '../../layouts/Fishbone'
+import Flowchart from '../../layouts/Flowchart'
 import TextEdit from './TextEdit'
 import {
   copyNodeTree,
@@ -67,7 +68,11 @@ const layouts = {
   // 鱼骨图
   [CONSTANTS.LAYOUT.FISHBONE]: Fishbone,
   // 鱼骨图2
-  [CONSTANTS.LAYOUT.FISHBONE2]: Fishbone
+  [CONSTANTS.LAYOUT.FISHBONE2]: Fishbone,
+  // 流程图（单侧向右分支）
+  [CONSTANTS.LAYOUT.FLOWCHART]: Flowchart,
+  // 流程图2（双侧交替分支）
+  [CONSTANTS.LAYOUT.FLOWCHART2]: Flowchart
 }
 
 //  渲染

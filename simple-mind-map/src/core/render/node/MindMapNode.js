@@ -856,9 +856,24 @@ class MindMapNode {
   //  获取节点形状
   getShape() {
     // 节点使用功能横线风格的话不支持设置形状，直接使用默认的矩形
-    return this.mindMap.themeConfig.nodeUseLineStyle
-      ? CONSTANTS.SHAPE.RECTANGLE
-      : this.style.getStyle('shape', false, false)
+    if (this.mindMap.themeConfig.nodeUseLineStyle) {
+      return CONSTANTS.SHAPE.RECTANGLE
+    }
+    // 优先尊重用户手动设置的形状
+    const selfShape = this.getSelfStyle('shape')
+    if (selfShape) {
+      return selfShape
+    }
+    // 其次使用布局提供的默认形状，如流程图中的判断节点需要渲染为菱形
+    const layout = this.mindMap.renderer && this.mindMap.renderer.layout
+    if (layout && typeof layout.getNodeDefaultShape === 'function') {
+      const layoutShape = layout.getNodeDefaultShape(this)
+      if (layoutShape) {
+        return layoutShape
+      }
+    }
+    // 最后回退到主题中配置的形状
+    return this.style.getStyle('shape', false, false)
   }
 
   //  检查节点是否存在自定义数据

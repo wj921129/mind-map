@@ -535,32 +535,35 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
 .toolbarContainer {
   &.isDark {
     .toolbar {
-      color: hsla(0, 0%, 100%, 0.9);
+      color: @dark-text-main;
       .toolbarBlock {
-        background-color: #262a2e;
+        background-color: @dark-panel-blur;
+        backdrop-filter: saturate(180%) blur(16px);
+        border-color: @dark-border;
 
         .fileTreeBox {
-          background-color: #262a2e;
+          background-color: @dark-panel-blur;
 
           /deep/ .el-tree {
-            background-color: #262a2e;
+            background-color: @dark-panel;
 
             &.el-tree--highlight-current {
               .el-tree-node.is-current > .el-tree-node__content {
-                background-color: hsla(0, 0%, 100%, 0.05) !important;
+                background-color: @dark-fill-hover !important;
               }
             }
 
             .el-tree-node:focus > .el-tree-node__content {
-              background-color: hsla(0, 0%, 100%, 0.05) !important;
+              background-color: @dark-fill-hover !important;
             }
 
             .el-tree-node__content:hover,
             .el-upload-list__item:hover {
-              background-color: hsla(0, 0%, 100%, 0.02) !important;
+              background-color: @dark-fill-hover !important;
             }
           }
 
@@ -581,6 +584,8 @@ export default {
       }
 
       .toolbarBtn {
+        color: @dark-text-sub;
+
         .icon {
           background: transparent;
           border-color: transparent;
@@ -588,14 +593,33 @@ export default {
 
         &:hover {
           &:not(.disabled) {
+            color: @dark-text-main;
+
             .icon {
-              background: hsla(0, 0%, 100%, 0.05);
+              background: @dark-fill-hover;
             }
           }
         }
 
+        &:active {
+          &:not(.disabled) {
+            .icon {
+              background: @dark-fill-active;
+            }
+          }
+        }
+
+        &.active {
+          color: @primary;
+
+          .icon {
+            background: @dark-primary-active-bg;
+            color: @primary;
+          }
+        }
+
         &.disabled {
-          color: #54595f;
+          color: @dark-text-weak;
         }
       }
     }
@@ -607,22 +631,25 @@ export default {
     top: 20px;
     width: max-content;
     display: flex;
-    font-size: 12px;
+    font-size: @font-size-sm;
     font-family: PingFangSC-Regular, PingFang SC;
     font-weight: 400;
-    color: rgba(26, 26, 26, 0.8);
+    color: @text-main;
     z-index: 2;
 
     .toolbarBlock {
       display: flex;
-      background-color: #fff;
-      padding: 10px 20px;
-      border-radius: 6px;
-      box-shadow: 0 2px 16px 0 rgba(0, 0, 0, 0.06);
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      margin-right: 20px;
+      background-color: @panel-bg;
+      backdrop-filter: saturate(180%) blur(16px);
+      padding: 10px 16px;
+      border-radius: @radius-lg;
+      box-shadow: @shadow-panel;
+      border: 1px solid @border-weak;
+      margin-right: 12px;
       flex-shrink: 0;
       position: relative;
+      transition: background-color @duration-base @ease-out,
+        border-color @duration-base @ease-out;
 
       &:last-of-type {
         margin-right: 0;
@@ -634,15 +661,16 @@ export default {
         top: 68px;
         width: 100%;
         height: 30px;
-        background-color: #fff;
+        background-color: @panel-bg;
         padding: 12px 5px;
         padding-top: 0;
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        border-radius: 5px;
+        border-radius: @radius-lg;
         min-width: 200px;
-        box-shadow: 0 2px 16px 0 rgba(0, 0, 0, 0.06);
+        box-shadow: @shadow-float;
+        transition: height @duration-base @ease-out;
 
         &.expand {
           height: 300px;
@@ -659,7 +687,7 @@ export default {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          border-bottom: 1px solid #e9e9e9;
+          border-bottom: 1px solid @border-weak;
           margin-bottom: 12px;
           padding-left: 12px;
 
@@ -720,7 +748,9 @@ export default {
       justify-content: center;
       flex-direction: column;
       cursor: pointer;
-      margin-right: 20px;
+      margin-right: 16px;
+      color: @text-sub;
+      transition: color @duration-fast @ease-out;
 
       &:last-of-type {
         margin-right: 0;
@@ -728,20 +758,33 @@ export default {
 
       &:hover {
         &:not(.disabled) {
+          color: @text-main;
+
           .icon {
-            background: #f5f5f5;
+            background: @fill-hover-strong;
+          }
+        }
+      }
+
+      &:active {
+        &:not(.disabled) {
+          .icon {
+            background: @fill-active;
           }
         }
       }
 
       &.active {
+        color: @primary;
+
         .icon {
-          background: #f5f5f5;
+          background: @primary-active-bg;
+          color: @primary;
         }
       }
 
       &.disabled {
-        color: #bcbcbc;
+        color: @text-weak;
         cursor: not-allowed;
         pointer-events: none;
       }
@@ -749,13 +792,15 @@ export default {
       .icon {
         display: flex;
         height: 26px;
-        background: #fff;
-        border-radius: 4px;
-        border: 1px solid #e9e9e9;
+        background: @fill-subtle;
+        border-radius: @radius-md;
+        border: 1px solid transparent;
         justify-content: center;
         flex-direction: column;
         text-align: center;
         padding: 0 5px;
+        transition: background-color @duration-fast @ease-out,
+          color @duration-fast @ease-out;
       }
 
       .text {

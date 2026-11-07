@@ -579,19 +579,25 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .sidebarContent {
   padding: 20px;
   padding-top: 10px;
 
   &.isDark {
     .title {
-      color: #fff;
+      color: @dark-text-main;
     }
 
     .row {
       .rowItem {
         .name {
-          color: hsla(0, 0%, 100%, 0.6);
+          color: @dark-text-sub;
+        }
+
+        .block {
+          border-color: @dark-border;
         }
       }
     }
@@ -601,7 +607,7 @@ export default {
     font-size: 16px;
     font-family: PingFangSC-Medium, PingFang SC;
     font-weight: 500;
-    color: rgba(26, 26, 26, 0.9);
+    color: @text-main;
     margin-bottom: 10px;
     margin-top: 20px;
 
@@ -630,9 +636,14 @@ export default {
         display: inline-block;
         width: 30px;
         height: 30px;
-        border: 1px solid #dcdfe6;
-        border-radius: 4px;
+        border: 1px solid @border-weak;
+        border-radius: @radius-sm;
         cursor: pointer;
+        transition: border-color @duration-fast @ease-out;
+
+        &:hover {
+          border-color: @primary;
+        }
       }
     }
   }

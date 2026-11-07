@@ -167,6 +167,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .aiChatBox {
   width: 100%;
   height: 100%;
@@ -175,11 +177,37 @@ export default {
   flex-direction: column;
 
   &.isDark {
+    .chatHeader {
+      border-bottom-color: @dark-border;
+    }
+
+    .chatResBox {
+      .chatItem {
+        .chatItemInner {
+          .avatar {
+            background-color: @dark-panel;
+          }
+
+          /deep/ .content {
+            color: @dark-text-main;
+          }
+        }
+      }
+    }
+
+    .chatInputBox {
+      border-top-color: @dark-border;
+
+      textarea {
+        background-color: transparent;
+        color: @dark-text-main;
+      }
+    }
   }
 
   .chatHeader {
     height: 50px;
-    border-bottom: 1px solid #e8e8e8;
+    border-bottom: 1px solid @border-weak;
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -197,39 +225,39 @@ export default {
       margin-bottom: 20px;
       border: 1px solid;
       position: relative;
-      border-radius: 10px;
+      border-radius: @radius-lg;
 
       &:last-of-type {
         margin-bottom: 0;
       }
 
       &.ai {
-        border-color: #409eff;
+        border-color: @primary;
 
         .chatItemInner {
           .avatar {
-            border-color: #409eff;
+            border-color: @primary;
             left: -12px;
             top: -12px;
 
             .icon {
-              color: #409eff;
+              color: @primary;
             }
           }
         }
       }
 
       &.user {
-        border-color: #f56c6c;
+        border-color: @danger;
 
         .chatItemInner {
           .avatar {
-            border-color: #f56c6c;
+            border-color: @danger;
             right: -12px;
             top: -12px;
 
             .icon {
-              color: #f56c6c;
+              color: @danger;
             }
           }
         }
@@ -249,7 +277,7 @@ export default {
           justify-content: center;
           flex-shrink: 0;
           position: absolute;
-          background-color: #fff;
+          background-color: @panel-bg;
 
           .icon {
             font-size: 18px;
@@ -260,7 +288,7 @@ export default {
         /deep/ .content {
           width: 100%;
           overflow: hidden;
-          color: #3f4a54;
+          color: @text-main;
           font-size: 14px;
           line-height: 1.5;
 
@@ -288,7 +316,7 @@ export default {
             font-size: 85%;
             white-space: break-spaces;
             background-color: rgba(175, 184, 193, 0.2);
-            border-radius: 6px;
+            border-radius: @radius-sm;
             font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
               Liberation Mono, monospace;
           }
@@ -312,7 +340,7 @@ export default {
     flex-shrink: 0;
     width: 100%;
     height: 150px;
-    border-top: 1px solid #e8e8e8;
+    border-top: 1px solid @border-weak;
     position: relative;
 
     textarea {

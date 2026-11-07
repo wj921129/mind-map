@@ -519,16 +519,21 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .listBox {
   width: 250px;
-  background: #fff;
-  box-shadow: 0 4px 12px 0 hsla(0, 0%, 69%, 0.5);
-  border-radius: 4px;
+  background: @panel-bg;
+  backdrop-filter: saturate(180%) blur(16px);
+  box-shadow: @shadow-float;
+  border-radius: @radius-md;
+  border: 1px solid @border-weak;
   padding-top: 16px;
   padding-bottom: 16px;
 
   &.isDark {
-    background: #363b3f;
+    background: @dark-panel-blur;
+    border-color: @dark-border;
   }
 }
 .contextmenuContainer {
@@ -536,14 +541,30 @@ export default {
   font-size: 14px;
   font-family: PingFangSC-Regular, PingFang SC;
   font-weight: 400;
-  color: #1a1a1a;
+  color: @text-main;
 
   &.isDark {
-    color: #fff;
+    color: @dark-text-main;
+
+    .splitLine {
+      background-color: @dark-border;
+    }
 
     .item {
       &:hover {
-        background: hsla(0, 0%, 100%, 0.05);
+        background: @dark-fill-hover;
+      }
+
+      &.disabled {
+        color: @dark-text-weak;
+
+        &:hover {
+          background: transparent;
+        }
+      }
+      
+      .desc {
+        color: @dark-text-weak;
       }
     }
   }
@@ -551,7 +572,7 @@ export default {
   .splitLine {
     width: 95%;
     height: 1px;
-    background-color: #e9edf2;
+    background-color: @border-weak;
     margin: 2px auto;
   }
 
@@ -563,13 +584,14 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: background-color @duration-fast @ease-out;
 
     &.danger {
-      color: #f56c6c;
+      color: @danger;
     }
 
     &:hover {
-      background: #f5f5f5;
+      background: @fill-hover;
 
       .subItems {
         visibility: visible;
@@ -577,12 +599,12 @@ export default {
     }
 
     &.disabled {
-      color: grey;
+      color: @text-weak;
       cursor: not-allowed;
       pointer-events: none;
 
       &:hover {
-        background: #fff;
+        background: transparent;
       }
     }
 
@@ -593,7 +615,7 @@ export default {
     }
 
     .desc {
-      color: #999;
+      color: @text-weak;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;

@@ -8,7 +8,7 @@
     v-show="showRichTextToolbar"
   >
     <el-tooltip :content="$t('richTextToolbar.bold')" placement="top">
-      <div class="btn" :class="{ active: formatInfo.bold }" @click="toggleBold">
+      <div class="btn btn-first" :class="{ active: formatInfo.bold }" @click="toggleBold">
         <span class="icon iconfont iconzitijiacu"></span>
       </div>
     </el-tooltip>
@@ -130,7 +130,7 @@
     </el-tooltip>
 
     <el-tooltip :content="$t('richTextToolbar.removeFormat')" placement="top">
-      <div class="btn" @click="removeFormat">
+      <div class="btn btn-last" @click="removeFormat">
         <span class="icon iconfont iconqingchu"></span>
       </div>
     </el-tooltip>
@@ -267,26 +267,30 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .richTextToolbar {
   position: fixed;
   z-index: 2000;
   height: 55px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 8px;
-  box-shadow: 0 2px 16px 0 rgba(0, 0, 0, 0.06);
+  background: @panel-bg;
+  backdrop-filter: saturate(180%) blur(16px);
+  border: 1px solid @border-weak;
+  border-radius: @radius-md;
+  box-shadow: @shadow-float;
   display: flex;
   align-items: center;
   transform: translateX(-50%);
 
   &.isDark {
-    background: #363b3f;
+    background: @dark-panel-blur;
+    border-color: @dark-border;
 
     .btn {
-      color: #fff;
+      color: @dark-text-main;
 
       &:hover {
-        background: hsla(0, 0%, 100%, 0.05);
+        background: @dark-fill-hover;
       }
     }
   }
@@ -298,13 +302,25 @@ export default {
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    transition: background-color @duration-fast @ease-out,
+      color @duration-fast @ease-out;
+
+    &.btn-first,
+    &:first-child {
+      border-radius: @radius-md 0 0 @radius-md;
+    }
+
+    &.btn-last,
+    &:last-child {
+      border-radius: 0 @radius-md @radius-md 0;
+    }
 
     &:hover {
-      background-color: #eefbed;
+      background-color: @fill-hover;
     }
 
     &.active {
-      color: #12bb37;
+      color: @primary;
     }
 
     .icon {
@@ -319,13 +335,20 @@ export default {
 
 .fontOptionsList {
   width: 150px;
+  padding: 4px;
+  border-radius: @radius-md;
+  box-shadow: @shadow-float;
+  box-sizing: border-box;
 
   &.isDark {
+    background: @dark-panel-blur;
+    border: 1px solid @dark-border;
+
     .fontOptionItem {
-      color: #fff;
+      color: @dark-text-main;
 
       &:hover {
-        background-color: hsla(0, 0%, 100%, 0.05);
+        background-color: @dark-fill-hover;
       }
     }
   }
@@ -336,13 +359,17 @@ export default {
     display: flex;
     align-items: center;
     cursor: pointer;
+    padding: 0 12px;
+    border-radius: @radius-sm;
+    box-sizing: border-box;
+    transition: background-color @duration-fast @ease-out;
 
     &:hover {
-      background-color: #f7f7f7;
+      background-color: @fill-hover;
     }
 
     &.active {
-      color: #12bb37;
+      color: @primary;
     }
   }
 }

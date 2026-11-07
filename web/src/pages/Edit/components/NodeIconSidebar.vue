@@ -170,19 +170,21 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .box {
   padding: 0 20px;
 
   &.isDark {
     .title {
-      color: #fff;
+      color: @dark-text-main;
     }
   }
 
   .title {
     font-size: 16px;
     font-weight: 500;
-    color: #333;
+    color: @text-main;
   }
 
   .boxContent {
@@ -206,6 +208,11 @@ export default {
             margin-bottom: 10px;
             cursor: pointer;
             position: relative;
+            transition: transform @duration-fast @ease-out;
+
+            &:hover {
+              transform: scale(1.15);
+            }
 
             /deep/ img {
               width: 100%;
@@ -226,7 +233,7 @@ export default {
                 width: 28px;
                 height: 28px;
                 border-radius: 50%;
-                border: 2px solid #409eff;
+                border: 2px solid @primary;
               }
             }
           }
@@ -253,6 +260,11 @@ export default {
           margin-bottom: 10px;
           cursor: pointer;
           position: relative;
+          transition: transform @duration-fast @ease-out;
+
+          &:hover {
+            transform: scale(1.08);
+          }
 
           /deep/ img {
             width: 100%;
@@ -268,7 +280,7 @@ export default {
               top: -4px;
               width: 54px;
               height: 54px;
-              border: 2px solid #409eff;
+              border: 2px solid @primary;
             }
           }
         }

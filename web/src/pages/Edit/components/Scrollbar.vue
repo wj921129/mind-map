@@ -115,20 +115,22 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .scrollbarContainer {
   &.isDark {
     .scrollbar {
-      background-color: #363b3f;
+      background-color: @dark-panel;
 
       .scrollbarInner {
-        background-color: rgba(0, 0, 0, 0.3);
+        background-color: hsla(0, 0%, 100%, 0.25);
       }
     }
   }
 
   .scrollbar {
     position: absolute;
-    background-color: #f5f5f5;
+    background-color: @fill-hover;
     border-radius: 10px;
     overflow: hidden;
 
@@ -158,7 +160,7 @@ export default {
 
     .scrollbarInner {
       position: absolute;
-      background-color: #ccc;
+      background-color: rgba(0, 0, 0, 0.25);
       border-radius: 10px;
     }
   }

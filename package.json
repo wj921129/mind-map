@@ -1,0 +1,23 @@
+{
+  "name": "mind-map-server",
+  "version": "1.0.0",
+  "description": "思绪思维导图 - 局域网可持久化、可分享服务",
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.mjs",
+    "mcp": "node server/mcp.mjs",
+    "test": "node server/tests/smoke.mjs",
+    "import": "node server/scripts/import.mjs"
+  },
+  "keywords": [
+    "mind-map",
+    "思维导图",
+    "局域网服务",
+    "sqlite"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.16.0"
+  }
+}

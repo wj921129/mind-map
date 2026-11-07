@@ -284,22 +284,24 @@ export default {
 </script>
 
 <style lang="less" scoped>
+@import '../../../style/tokens.less';
+
 .nodeExportDialog {
   .exportContainer {
     &.isDark {
       .downloadTypeSelectBox {
         .downloadTypeList {
-          background-color: #363b3f;
+          background-color: @dark-panel;
 
           .downloadTypeItem {
-            background-color: #363b3f;
+            background-color: @dark-panel;
 
             &.active {
-              background-color: #262a2e;
+              background-color: @dark-fill-hover;
             }
 
             .name {
-              color: hsla(0, 0%, 100%, 0.9);
+              color: @dark-text-main;
             }
           }
         }
